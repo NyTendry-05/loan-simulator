@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#183e34">
+  <title>NYT — Your lending workspace</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script type="module" src="/assets/app.js"></script>
+</head>
+<body>
+  <div id="boot" class="boot" role="status"><span class="brand-symbol">N</span><p>Opening your workspace…</p></div>
+  <main id="auth-screen" class="auth-layout" hidden>
+    <section class="auth-story">
+      <a class="brand brand-light" href="/"><span class="brand-symbol">N</span>nyt<span class="brand-caption">LENDING</span></a>
+      <div class="story-copy"><span class="eyebrow light">MAKE ROOM FOR WHAT’S NEXT</span><h1>A clearer path<br>to your next<br><em>chapter.</em></h1><p>Your application, your documents, your progress.<br>One place to move forward with confidence.</p></div>
+      <div class="arch-art" aria-hidden="true"><div></div><div></div><div></div><span>→</span></div>
+      <div class="story-footer"><span>A little less paperwork.<br>A lot more possibility.</span><span>NYT / 01</span></div>
+    </section>
+    <section class="auth-panel">
+      <div class="auth-top"><span>YOUR LENDING WORKSPACE</span><span class="tiny-dot"></span></div>
+      <div class="auth-form-wrap">
+        <span class="eyebrow">LET’S GET STARTED</span><h2 id="auth-title">Welcome back.</h2><p id="auth-description" class="muted">Sign in to pick up where you left off.</p>
+        <div class="auth-tabs" role="group" aria-label="Account access"><button id="show-login" class="selected">Sign in</button><button id="show-register">Create account</button></div>
+        <form id="auth-form">
+          <label id="name-field" hidden>Full name<input name="name" autocomplete="name" maxlength="100"></label>
+          <label>Email address<input name="email" type="email" autocomplete="username" required maxlength="254" placeholder="you@example.com"></label>
+          <label>Password<span class="password-wrap"><input id="auth-password" name="password" type="password" autocomplete="current-password" required maxlength="72" aria-label="Password"><button type="button" id="toggle-password" aria-label="Show password">Show</button></span></label>
+          <p id="password-help" class="small muted" hidden>Use at least 12 characters. Your account is private to you.</p>
+          <p id="auth-error" class="form-error" role="alert" hidden></p>
+          <button class="button primary wide" id="auth-submit" type="submit">Sign in <span>↗</span></button>
+        </form>
+        <p class="secure-note"><span aria-hidden="true">▣</span> Your information stays in your secure workspace.</p>
+      </div>
+      <div class="auth-bottom">Thoughtfully simple. From application to decision.</div>
+    </section>
+  </main>
+  <div id="workspace" class="workspace" hidden>
+    <aside class="sidebar">
+      <a class="brand brand-light" href="/"><span class="brand-symbol">N</span>nyt<span class="brand-caption">LENDING</span></a>
+      <div class="workspace-label">YOUR WORKSPACE</div><nav id="navigation" aria-label="Main navigation"></nav>
+      <div class="sidebar-bottom"><div class="sidebar-note"><span class="mini-orbit" aria-hidden="true">↗</span><strong>Every step, together.</strong><p>Your progress is always<br>right here.</p></div><div class="account"><span id="avatar" class="avatar"></span><div><strong id="account-name"></strong><small id="account-role"></small></div><button id="logout" title="Sign out" aria-label="Sign out">↪</button></div></div>
+    </aside>
+    <div class="workspace-main">
+      <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Overview</strong></span><div class="topbar-right"><span class="live-dot"></span><span>Private workspace</span><button id="refresh" class="icon-button" aria-label="Refresh workspace" title="Refresh">↻</button></div></header>
+      <main id="content" tabindex="-1"></main>
+      <footer class="workspace-footer"><span>NYT LENDING</span><span>Progress, at your pace.</span></footer>
+    </div>
+  </div>
+  <dialog id="modal"><div id="modal-body"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body></html>

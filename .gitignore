@@ -1,0 +1,60 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Local tools, database, credentials, and demo files ###
+/.tools/
+/.local/
+
+### Environment secrets (keep the configuration template) ###
+.env
+.env.*
+!.env.example
+
+### Node.js dependencies and coverage ###
+node_modules/
+coverage/
+
+### Browser automation artifacts ###
+/.playwright-mcp/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+### Runtime and operating system files ###
+*.log
+*.pid
+.DS_Store
+Thumbs.db
+Desktop.ini

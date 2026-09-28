@@ -2,20 +2,37 @@
 
 Node.js serves the customer and bank **web interface**. Spring Boot owns authentication, loan rules, verification, and persistence. PostgreSQL stores the actual data.
 
-## Open the application
+## Local setup
 
-The local setup is provisioned on this workspace.
+Install Java 21, Node.js 24 or newer, and PostgreSQL binaries. The Maven wrapper is included in the repository.
 
-- Portal: **http://127.0.0.1:3000**
-- Administrator email: **admin@admin.com**
-- Administrator display name: **admin**
-- Generated password: open **.local/administrator.json** locally.
-- Database name: **nyt_loans**.
-- Database connection settings: **.env** (Spring) and **.local/database.json** (local database management).
+Set these environment variables in your local terminal:
 
-Credentials and encryption keys are generated, persisted locally, and excluded from source control. No sample loan products or fixed lending rates are inserted. Sign in as the administrator, create the bank’s products, and add officer accounts through **Team access**. Customers can register from the sign-in page.
+| Variable | Purpose |
+|---|---|
+| `JAVA_HOME` | Path to your JDK 21 installation; Maven uses this to compile the backend |
+| `POSTGRES_BIN` | Path to the PostgreSQL directory containing `initdb`, `postgres`, and `pg_ctl` |
+| `ADMIN_EMAIL` | Administrator email chosen privately during first-time setup |
+| `ADMIN_NAME` | Administrator display name chosen privately during first-time setup |
+| `LOCAL_JAVA_HOME` | Optional explicit JDK path for the local application launcher |
+| `LOCAL_DATABASE_PORT` | Optional preferred local database port |
 
-Use exactly the configured portal origin (by default 127.0.0.1, not localhost) so browser session and origin checks agree.
+Administrator identity values are required only during first-time setup. Supply your own values locally; there is no shared administrator login documented in this repository.
+
+From the repository root, install dependencies and build the backend:
+
+~~~powershell
+npm ci --prefix node-api
+.\mvnw.cmd -v
+.\mvnw.cmd verify
+node scripts/local.mjs start
+~~~
+
+The Maven version output must show Java 21. The launcher creates local database configuration, generates credentials and encryption keys, and starts PostgreSQL, Spring Boot, and the Node.js portal. It reports the portal address and where the generated administrator credentials can be accessed locally.
+
+Open the reported portal address, normally **http://127.0.0.1:3000**. Use the configured origin exactly so browser session and origin checks agree.
+
+Sign in with the administrator account created during setup, configure loan products, and add officer accounts through **Team access**. Customers register from the sign-in page. Initial setup does not seed loan products or lending rates.
 
 ## Start, stop, and restart
 
@@ -29,7 +46,7 @@ node scripts/local.mjs restart
 
 The startup script starts the persistent PostgreSQL cluster, Spring Boot, and the Node portal in the background without console windows. Repeated start calls report the running portal. Stop preserves the database and secrets. Process identity is checked before stopping managed processes.
 
-Logs: .local/backend.log, .local/portal.log, .local/postgres.log. On Windows, standard error is written to the matching .error.log files. Windows services are launched with an explicitly hidden console that database workers inherit.
+Service logs are written to the ignored local runtime directory. On Windows, standard error is written to separate error logs and background processes use hidden consoles.
 
 To start just PostgreSQL:
 
@@ -37,18 +54,25 @@ To start just PostgreSQL:
 node scripts/local.mjs database
 ~~~
 
-On this machine, Java 21 and PostgreSQL binaries are available under .tools. For another machine, install Node.js 24+, Java 21, and PostgreSQL binaries, run npm ci in node-api, and set POSTGRES_BIN to the PostgreSQL bin directory. LOCAL_JAVA_HOME can explicitly select a JDK; otherwise the local Java 21 installation is preferred, then JAVA_HOME. First setup also requires ADMIN_EMAIL and ADMIN_NAME environment variables. LOCAL_DATABASE_PORT optionally chooses a port; the script finds a free port when the preferred one is occupied.
+The launcher prefers `LOCAL_JAVA_HOME`, then a workspace-local JDK if present, then `JAVA_HOME`. It chooses an available database port during initial setup if the preferred port is occupied.
 
 Build the Spring package before first startup or after Java changes:
 
 ~~~powershell
-$env:JAVA_HOME = (Get-ChildItem .tools/java21 -Directory | Select-Object -First 1).FullName
 node scripts/local.mjs stop
 .\mvnw.cmd verify
 node scripts/local.mjs start
 ~~~
 
-The generated .env files are reused. Existing nonempty values are not silently replaced. Never delete encryption or lookup keys while retaining their database.
+The generated environment files are reused. Existing nonempty values are not silently replaced. Keep encryption and lookup keys stable while retaining the corresponding database.
+
+## Configuration and confidential information
+
+The root and Node.js `.env.example` files document configuration names and development defaults. Actual credentials, administrator identities, connection settings, and encryption keys belong in private local configuration or a deployment secret manager.
+
+The `.gitignore` excludes environment files containing real values, local runtime data, demo records and screenshots, installed tools, dependencies, logs, and test artifacts. Configuration templates remain available to commit. Ignore rules do not remove files that were already tracked by Git.
+
+Do not publish credentials, tokens, database exports, customer documents, or screenshots containing personal data in documentation, commits, issues, or shared logs. This README contains generic setup instructions and no deployment-specific account details.
 
 ## Interface
 
@@ -78,7 +102,7 @@ Java 21, Spring Boot 4.1.1, Spring Security, Hibernate/JPA, Flyway, and PostgreS
 
 ## Database
 
-The local cluster lives in .local/postgres. The application database role is not a superuser and cannot create roles or databases. A separate local owner account provisions it. PostgreSQL listens only on 127.0.0.1 and uses SCRAM password authentication.
+The local cluster is stored in the ignored runtime directory. The application database role is not a superuser and cannot create roles or databases. A separate local owner account provisions it. The local launcher binds PostgreSQL to the loopback interface and uses SCRAM password authentication.
 
 Flyway applies migrations; Hibernate validates the schema instead of generating it:
 
@@ -180,14 +204,13 @@ Lists accept page (zero based) and size (1–100), and return content, page, siz
 
 ## Verification
 
-Maven uses `JAVA_HOME`, which can differ from the Java executable on `PATH`. If compilation reports `release version 21 not supported`, select JDK 21 in the current PowerShell terminal before building:
+Maven uses `JAVA_HOME`, which can differ from the Java executable on `PATH`. If compilation reports `release version 21 not supported`, set `JAVA_HOME` to your JDK 21 installation, open a new terminal if necessary, and verify the selected runtime:
 
 ~~~powershell
-$env:JAVA_HOME = (Get-ChildItem .tools/java21 -Directory | Select-Object -First 1).FullName
 .\mvnw.cmd -v
 ~~~
 
-The Maven version output must show Java 21. Workspace settings also select the local JDK for new VS Code terminals and Maven extension commands; close existing terminals and create a new one after changing those settings. On another machine, set `JAVA_HOME` to its installed JDK 21 directory.
+The Maven version output must show Java 21. Configure your editor's Java and Maven settings to use the same JDK; editor configuration is local to each developer.
 
 Stop the local application with `node scripts/local.mjs stop` before packaging on Windows, so the running backend does not lock the JAR. Run `node scripts/local.mjs start` after verification to start it again. Maven `deploy` publishes artifacts to a configured repository; it is not the command for starting this application.
 
@@ -196,6 +219,9 @@ Stop the local application with `node scripts/local.mjs stop` before packaging o
 cd node-api
 npm run lint
 npm test
+cd ..
+node scripts/local.mjs start
+cd node-api
 npx playwright test
 ~~~
 
@@ -203,7 +229,7 @@ Java tests cover the loan workflow, actual RSA JWT validation for OIDC, customer
 
 Node tests cover gateway behavior, CSRF rejection, cookie security, authentication errors, multipart uploads, downloads, timeouts, rate limits, and view serving. Jest enforces 85% coverage on server modules; frontend behavior is tested through Playwright.
 
-Browser tests require the local application to be running. They create explicitly marked test accounts and a loan product, complete the administrator → customer → officer workflow, verify persistence after reload, and delete their own fixtures. They use the private local database config for fixture cleanup; never point them at a live bank database. Screenshots are written under .local.
+Browser tests require the local application to be running and Playwright's Chromium browser to be installed (`npx playwright install chromium` from `node-api`). They create explicitly marked test accounts and a loan product, complete the administrator → customer → officer workflow, verify persistence after reload, and delete their own fixtures. They use private local configuration for fixture cleanup; run them only against a development database. Generated screenshots and traces remain in the ignored runtime directory.
 
 For an independent PostgreSQL integration-test database, override the Java test datasource. The browser suite already exercises PostgreSQL through both running services. Tests use ephemeral encryption keys; use a fresh database for repeated standalone integration runs.
 

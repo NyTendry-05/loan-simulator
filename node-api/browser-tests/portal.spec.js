@@ -15,11 +15,19 @@ async function signIn(page, email, password) {
 test('desktop and mobile entry screens are usable', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeVisible();
+  await page.getByRole('button', { name: 'How to apply' }).click();
+  await expect(page.getByRole('dialog', { name: 'Application guide' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.screenshot({ path: '../.local/portal-login.png', fullPage: true, animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByLabel('Email address', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: '../.local/portal-mobile-login.png', fullPage: true, animations: 'disabled' });
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByLabel('Full name')).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Account access' }).getByRole('button', { name: 'Create account', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 test('administrator, customer and officer complete a real loan workflow', async ({ page, browser }) => {
   const failures = [];
@@ -33,7 +41,7 @@ test('administrator, customer and officer complete a real loan workflow', async 
     await signIn(page, admin.email, admin.password);
     await expect(page.getByRole('heading', { name: 'Welcome, admin.' })).toBeVisible();
     await page.screenshot({ path: '../.local/portal-admin.png', fullPage: true, animations: 'disabled' });
-    await page.getByRole('button', { name: 'Create product ＋', exact: true }).click();
+    await page.getByRole('button', { name: 'Create product', exact: true }).click();
     const dialog = page.getByRole('dialog');
     for (const [label, value] of Object.entries({ 'Product name': 'QA review loan', 'Unique product code': 'QA_' + marker.toUpperCase(),
       'Currency code': 'USD', 'Currency decimal places': '2', 'Minimum loan amount': '100', 'Maximum loan amount': '10000',
@@ -42,17 +50,17 @@ test('administrator, customer and officer complete a real loan workflow', async 
     }
     await dialog.getByLabel('Identity', { exact: true }).check();
     const productResponse = page.waitForResponse(response => response.url().endsWith('/api/v1/products') && response.request().method() === 'POST');
-    await dialog.getByRole('button', { name: 'Create product ↗' }).click();
+    await dialog.getByRole('button', { name: 'Create product', exact: true }).click();
     created.product = (await (await productResponse).json()).id;
     expect(created.product).toBeTruthy();
     await expect(dialog).not.toBeVisible();
     await page.getByRole('link', { name: 'Team access' }).click();
-    await page.getByRole('button', { name: 'Add team member ＋', exact: true }).click();
+    await page.getByRole('button', { name: 'Add team member', exact: true }).click();
     await dialog.getByLabel('Display name').fill('QA Bank Officer');
     await dialog.getByLabel('Email address').fill(staffEmail);
     await dialog.getByLabel('Initial password').fill(password);
     const staffResponse = page.waitForResponse(response => response.url().endsWith('/api/v1/admin/users') && response.request().method() === 'POST');
-    await dialog.getByRole('button', { name: 'Create account ↗' }).click();
+    await dialog.getByRole('button', { name: 'Create account', exact: true }).click();
     created.users.push((await (await staffResponse).json()).id);
     await expect(dialog).not.toBeVisible();
 
@@ -80,36 +88,48 @@ test('administrator, customer and officer complete a real loan workflow', async 
     await customerDialog.getByRole('button', { name: 'Create draft' }).click();
     created.loan = (await (await application).json()).id;
     await expect(customer.getByRole('heading', { name: 'QA review loan', exact: true })).toBeVisible();
-    await customer.getByRole('button', { name: 'Upload ↑', exact: true }).click();
+    await expect(customer.getByRole('button', { name: 'Submit application', exact: true })).toBeDisabled();
+    await expect(customer.locator('[aria-current="step"]')).toContainText('Draft');
+    await customer.getByRole('button', { name: 'Upload', exact: true }).click();
     await customerDialog.getByLabel('Choose a document').setInputFiles({ name: 'evidence.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\nQA evidence') });
     await customerDialog.getByRole('button', { name: 'Upload document' }).click();
     await expect(customerDialog).not.toBeVisible();
-    await expect(customer.getByRole('link', { name: 'Download ↓' })).toBeVisible();
-    await customer.getByRole('button', { name: 'Submit application ↗', exact: true }).click();
-    await customerDialog.getByRole('button', { name: 'Submit application ↗', exact: true }).click();
+    await expect(customer.getByRole('link', { name: 'Download', exact: true })).toBeVisible();
+    await expect(customer.getByRole('button', { name: 'Submit application', exact: true })).toBeEnabled();
+    await customer.getByRole('button', { name: 'Submit application', exact: true }).click();
+    await customerDialog.getByRole('button', { name: 'Submit application', exact: true }).click();
     await expect(customerDialog).not.toBeVisible();
     await expect(customer.locator('.badge.submitted')).toBeVisible();
     await customer.setViewportSize({ width: 390, height: 844 });
     expect(await customer.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await customer.screenshot({ path: '../.local/portal-mobile-application.png', fullPage: true, animations: 'disabled' });
+    await customer.getByRole('button', { name: 'Menu' }).click();
+    await expect(customer.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'true');
+    await customer.getByRole('link', { name: 'My applications', exact: true }).click();
+    await expect(customer.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-expanded', 'false');
+    await customer.getByRole('row').filter({ hasText: 'QA review loan' }).getByRole('link', { name: 'View' }).click();
+    await expect(customer.locator('.badge.submitted')).toBeVisible();
 
     staffContext = await browser.newContext({ baseURL: process.env.PORTAL_TEST_URL ?? 'http://127.0.0.1:3000' });
     const officer = await staffContext.newPage();
     officer.on('pageerror', error => failures.push(error.message));
     await signIn(officer, staffEmail, password);
     await officer.getByRole('row').filter({ hasText: 'QA review loan' }).getByRole('link', { name: 'View' }).click();
-    await officer.getByRole('button', { name: 'Start review ↗', exact: true }).click();
-    await officer.getByRole('dialog').getByRole('button', { name: 'Start review ↗', exact: true }).click();
+    await officer.getByRole('button', { name: 'Start review', exact: true }).click();
+    await officer.getByRole('dialog').getByRole('button', { name: 'Start review', exact: true }).click();
     await expect(officer.getByRole('dialog')).not.toBeVisible();
     await officer.getByRole('button', { name: 'Review', exact: true }).click();
     await officer.getByRole('dialog').getByLabel('Review note').fill('QA evidence reviewed');
     await officer.getByRole('dialog').getByRole('button', { name: 'Save verification' }).click();
     await expect(officer.getByRole('dialog')).not.toBeVisible();
-    await officer.getByRole('button', { name: 'Record decision ↗', exact: true }).click();
+    await officer.getByRole('button', { name: 'Record decision', exact: true }).click();
     await officer.getByRole('dialog').getByLabel('Decision reason').fill('QA workflow completed');
-    await officer.getByRole('dialog').getByRole('button', { name: 'Record decision ↗', exact: true }).click();
+    await officer.getByRole('dialog').getByRole('button', { name: 'Record decision', exact: true }).click();
     await expect(officer.getByRole('dialog')).not.toBeVisible();
     await expect(officer.locator('.badge.approved')).toBeVisible();
+    await expect(officer.locator('[aria-current="step"]')).toContainText('Approved');
+    await expect(officer.getByText('A bank review is still required.', { exact: false })).toHaveCount(0);
+    await officer.screenshot({ path: '../.local/portal-officer-approved.png', fullPage: true, animations: 'disabled' });
     await customer.getByRole('button', { name: 'Refresh workspace' }).click();
     await expect(customer.locator('.badge.approved')).toBeVisible();
     await customer.reload();

@@ -85,6 +85,10 @@ The responsive portal includes:
 - Loading, empty, validation, and service error states. Product terms and upload limits come from Spring.
 - Monetary values returned as decimal strings to preserve precision through JavaScript.
 
+The interface uses a restrained navy-and-white design, role-specific navigation, mobile menus, responsive application tables, and grouped forms. Application pages show a progress tracker, required upload counts, the next action, and the repayment estimate. An in-app guide explains the workflow for each role. Dashboard counts come from the API.
+
+Planned income-based eligibility and AI-assisted simulation work is tracked in [the roadmap](docs/ROADMAP.md). Those additions are not part of the current interface release.
+
 Node uses view controllers, static HTML/CSS/ES modules, browser controllers, and a service layer for Spring communication. It does not connect to PostgreSQL at runtime.
 
 ## Architecture

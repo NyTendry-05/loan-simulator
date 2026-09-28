@@ -10,7 +10,7 @@ const fixture = () => ({ token: 'secret-session-token', expiresAt: '2099-01-01T0
 describe('portal sessions', () => {
   test('serves the interface and static assets', async () => {
     const app = createApp(config);
-    expect((await request(app).get('/')).text).toContain('Your lending workspace');
+    expect((await request(app).get('/')).text).toContain('ONLINE APPLICATION CENTRE');
     expect((await request(app).get('/assets/app.js')).status).toBe(200);
     expect((await request(app).get('/assets/styles.css')).status).toBe(200);
     expect((await request(app).get('/')).headers['content-security-policy']).not.toContain('upgrade-insecure-requests');

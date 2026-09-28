@@ -2,50 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#183e34">
-  <title>NYT — Your lending workspace</title>
+  <meta name="theme-color" content="#142b49">
+  <title>NYT | Online lending</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/styles.css">
   <script type="module" src="/assets/app.js"></script>
 </head>
 <body>
-  <div id="boot" class="boot" role="status"><span class="brand-symbol">N</span><p>Opening your workspace…</p></div>
+  <div id="boot" class="boot" role="status"><span class="brand-symbol">N</span><p>Loading your account…</p></div>
   <main id="auth-screen" class="auth-layout" hidden>
-    <section class="auth-story">
-      <a class="brand brand-light" href="/"><span class="brand-symbol">N</span>nyt<span class="brand-caption">LENDING</span></a>
-      <div class="story-copy"><span class="eyebrow light">MAKE ROOM FOR WHAT’S NEXT</span><h1>A clearer path<br>to your next<br><em>chapter.</em></h1><p>Your application, your documents, your progress.<br>One place to move forward with confidence.</p></div>
-      <div class="arch-art" aria-hidden="true"><div></div><div></div><div></div><span>→</span></div>
-      <div class="story-footer"><span>A little less paperwork.<br>A lot more possibility.</span><span>NYT / 01</span></div>
-    </section>
-    <section class="auth-panel">
-      <div class="auth-top"><span>YOUR LENDING WORKSPACE</span><span class="tiny-dot"></span></div>
-      <div class="auth-form-wrap">
-        <span class="eyebrow">LET’S GET STARTED</span><h2 id="auth-title">Welcome back.</h2><p id="auth-description" class="muted">Sign in to pick up where you left off.</p>
-        <div class="auth-tabs" role="group" aria-label="Account access"><button id="show-login" class="selected">Sign in</button><button id="show-register">Create account</button></div>
-        <form id="auth-form">
-          <label id="name-field" hidden>Full name<input name="name" autocomplete="name" maxlength="100"></label>
-          <label>Email address<input name="email" type="email" autocomplete="username" required maxlength="254" placeholder="you@example.com"></label>
-          <label>Password<span class="password-wrap"><input id="auth-password" name="password" type="password" autocomplete="current-password" required maxlength="72" aria-label="Password"><button type="button" id="toggle-password" aria-label="Show password">Show</button></span></label>
-          <p id="password-help" class="small muted" hidden>Use at least 12 characters. Your account is private to you.</p>
-          <p id="auth-error" class="form-error" role="alert" hidden></p>
-          <button class="button primary wide" id="auth-submit" type="submit">Sign in <span>↗</span></button>
-        </form>
-        <p class="secure-note"><span aria-hidden="true">▣</span> Your information stays in your secure workspace.</p>
-      </div>
-      <div class="auth-bottom">Thoughtfully simple. From application to decision.</div>
-    </section>
+    <header class="public-header">
+      <a class="brand" href="/" aria-label="NYT Lending home"><span class="brand-symbol">N</span><span>NYT<span class="brand-caption">LENDING</span></span></a>
+      <span class="public-section">Personal lending</span>
+      <button class="text-button" data-action="guide">How to apply <span aria-hidden="true">→</span></button>
+    </header>
+    <div class="auth-body">
+      <section class="auth-story" aria-labelledby="intro-title">
+        <span class="eyebrow">ONLINE APPLICATION CENTRE</span>
+        <h1 id="intro-title">Your loan application.<br>From start to decision.</h1>
+        <p class="story-intro">Review the terms. Submit your documents.<br>Know where your application stands.</p>
+        <ol class="auth-steps">
+          <li><span>01</span><div><h2>Choose your loan</h2><p>Compare available amounts, interest rates, and repayment terms.</p></div></li>
+          <li><span>02</span><div><h2>Complete your application</h2><p>Provide your financial details and the required documents.</p></div></li>
+          <li><span>03</span><div><h2>Follow your review</h2><p>Check your status and read the bank’s decision in your account.</p></div></li>
+        </ol>
+        <p class="story-note">Applications are subject to document verification and the selected loan’s affordability requirements.</p>
+      </section>
+      <section class="auth-panel" aria-labelledby="auth-title">
+        <div class="auth-form-wrap">
+          <span class="eyebrow">ACCOUNT ACCESS</span><h2 id="auth-title">Welcome back.</h2>
+          <p id="auth-description" class="muted">Sign in to manage your applications.</p>
+          <div class="auth-tabs" role="group" aria-label="Account access"><button id="show-login" class="selected" aria-pressed="true">Sign in</button><button id="show-register" aria-pressed="false">Create account</button></div>
+          <form id="auth-form">
+            <label id="name-field" hidden>Full name<input name="name" autocomplete="name" maxlength="100"></label>
+            <label>Email address<input name="email" type="email" autocomplete="username" required maxlength="254" placeholder="you@example.com"></label>
+            <label>Password<span class="password-wrap"><input id="auth-password" name="password" type="password" autocomplete="current-password" required maxlength="72" aria-label="Password"><button type="button" id="toggle-password" aria-label="Show password">Show</button></span></label>
+            <p id="password-help" class="help" hidden>Use at least 12 characters and no more than 72 UTF-8 bytes.</p>
+            <p id="auth-error" class="form-error" role="alert" hidden></p>
+            <button class="button primary wide" id="auth-submit" type="submit">Sign in</button>
+          </form>
+          <div class="auth-help"><strong>New to NYT?</strong><p>Create an account to start an application. Bank employees should use the account provided by their administrator.</p></div>
+        </div>
+        <div class="auth-security"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4M12 14v3"/></svg><span>Keep your sign-in details private.<br>Sign out when using a shared device.</span></div>
+      </section>
+    </div>
+    <footer class="public-footer"><span>NYT Lending</span><span>Online applications · Document review · Status tracking</span></footer>
   </main>
   <div id="workspace" class="workspace" hidden>
+    <a class="skip-link" href="#content">Skip to main content</a>
+    <header class="app-header">
+      <a class="brand brand-light" href="#/overview" aria-label="NYT Lending overview"><span class="brand-symbol">N</span><span>NYT<span class="brand-caption">LENDING</span></span></a>
+      <span class="header-divider"></span><span class="portal-name" id="portal-name">Personal lending</span>
+      <div class="header-account"><span id="avatar" class="avatar" aria-hidden="true"></span><div><strong id="account-name"></strong><small id="account-role"></small></div><button id="logout" class="sign-out" aria-label="Sign out">Sign out</button></div>
+    </header>
     <aside class="sidebar">
-      <a class="brand brand-light" href="/"><span class="brand-symbol">N</span>nyt<span class="brand-caption">LENDING</span></a>
-      <div class="workspace-label">YOUR WORKSPACE</div><nav id="navigation" aria-label="Main navigation"></nav>
-      <div class="sidebar-bottom"><div class="sidebar-note"><span class="mini-orbit" aria-hidden="true">↗</span><strong>Every step, together.</strong><p>Your progress is always<br>right here.</p></div><div class="account"><span id="avatar" class="avatar"></span><div><strong id="account-name"></strong><small id="account-role"></small></div><button id="logout" title="Sign out" aria-label="Sign out">↪</button></div></div>
+      <button id="menu-toggle" class="menu-toggle" aria-controls="navigation" aria-expanded="false">Menu <span aria-hidden="true">☰</span></button>
+      <div class="workspace-label">ACCOUNT NAVIGATION</div><nav id="navigation" aria-label="Main navigation"></nav>
+      <div class="sidebar-bottom"><button class="guide-link" data-action="guide"><span aria-hidden="true">?</span>Application guide</button><p>Review your details carefully before submitting an application.</p></div>
     </aside>
     <div class="workspace-main">
-      <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Overview</strong></span><div class="topbar-right"><span class="live-dot"></span><span>Private workspace</span><button id="refresh" class="icon-button" aria-label="Refresh workspace" title="Refresh">↻</button></div></header>
+      <div class="topbar"><span class="breadcrumb">Lending <span aria-hidden="true">/</span> <strong id="breadcrumb">Overview</strong></span><button id="refresh" class="text-button" aria-label="Refresh workspace"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg>Refresh</button></div>
       <main id="content" tabindex="-1"></main>
-      <footer class="workspace-footer"><span>NYT LENDING</span><span>Progress, at your pace.</span></footer>
+      <footer class="workspace-footer"><span>NYT Lending</span><button class="text-button" data-action="guide">Application guide</button></footer>
     </div>
   </div>
-  <dialog id="modal"><div id="modal-body"></div></dialog>
+  <dialog id="modal" aria-labelledby="modal-title"><div id="modal-body"></div></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
-</body></html>
+</body>
+</html>

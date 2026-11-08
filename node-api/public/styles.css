@@ -303,3 +303,9 @@ dialog::backdrop { background:#0d203c85; }
   .form-actions { position:sticky; bottom:-21px; background:white; padding:17px 0; margin-bottom:-21px; }.toast { right:20px; left:20px; bottom:20px; }
 }
 @media(prefers-reduced-motion:no-preference) { .button,#navigation a { transition:background-color .12s; } }
+
+
+/* Prominent boundaries for the demonstration portal. */
+.demo-banner { padding:14px max(5vw,24px); background:#fff7e9; border-bottom:1px solid #e9d5aa; color:#79571b; font-size:12px; line-height:1.7; }
+.workspace-demo { padding:13px 36px; }.workspace-demo a { display:inline-block; margin-left:8px; }
+@media(max-width:680px) { .workspace-demo { padding:13px 20px; } }

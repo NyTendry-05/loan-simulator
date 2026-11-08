@@ -6,14 +6,14 @@ import pg from 'pg';
 const admin = JSON.parse(await readFile(new URL('../../.local/administrator.json', import.meta.url), 'utf8'));
 const database = JSON.parse(await readFile(new URL('../../.local/database.json', import.meta.url), 'utf8'));
 async function signIn(page, email, password) {
-  await page.goto('/');
+  await page.goto('/portal');
   await page.getByLabel('Email address', { exact: true }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.locator('#auth-submit').click();
   await expect(page.locator('#workspace')).toBeVisible();
 }
 test('desktop and mobile entry screens are usable', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/portal');
   await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeVisible();
   await page.getByRole('button', { name: 'How to apply' }).click();
   await expect(page.getByRole('dialog', { name: 'Application guide' })).toBeVisible();
@@ -67,7 +67,7 @@ test('administrator, customer and officer complete a real loan workflow', async 
     customerContext = await browser.newContext({ baseURL: process.env.PORTAL_TEST_URL ?? 'http://127.0.0.1:3000' });
     const customer = await customerContext.newPage();
     customer.on('pageerror', error => failures.push(error.message));
-    await customer.goto('/');
+    await customer.goto('/portal');
     await customer.getByRole('button', { name: 'Create account', exact: true }).click();
     await customer.getByLabel('Full name').fill('QA Customer');
     await customer.getByLabel('Email address').fill(customerEmail);

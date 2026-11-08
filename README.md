@@ -30,7 +30,7 @@ node scripts/local.mjs start
 
 The Maven version output must show Java 21. The launcher creates local database configuration, generates credentials and encryption keys, and starts PostgreSQL, Spring Boot, and the Node.js portal. It reports the portal address and where the generated administrator credentials can be accessed locally.
 
-Open the reported portal address, normally **http://127.0.0.1:3000**. Use the configured origin exactly so browser session and origin checks agree.
+Open **http://127.0.0.1:3000** for the public repayment calculator, or **http://127.0.0.1:3000/portal** for the demonstration account portal. Use the configured origin exactly so browser session and origin checks agree.
 
 Sign in with the administrator account created during setup, configure loan products, and add officer accounts through **Team access**. Customers register from the sign-in page. Initial setup does not seed loan products or lending rates.
 
@@ -246,3 +246,21 @@ Secrets, financial fields, identity data, and uploaded document content are prot
 Before external deployment, configure HTTPS, managed secrets, backups, email/MFA/reset flows as needed, database timeout/retention policy, and shared rate limiting if using multiple Node instances. The provided local startup is a development deployment. Email/SMS delivery is not configured; application events supply status updates inside the portal.
 
 References: [Spring Boot](https://docs.spring.io/spring-boot/4.1/), [Spring Security](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html), [springdoc](https://springdoc.org/).
+
+## First staged update: public repayment calculator
+
+The public home page accepts only loan amount, annual fixed rate, term and display currency.
+It generates a monthly amortization schedule and CSV without requiring an account or
+storing an application. Calculations are illustrative, exclude fees, and are not loan
+offers or eligibility decisions. The portal is at `/portal`; use fictional details only.
+
+`POST /api/v1/simulations/repayment` accepts JSON fields `principal`,
+`annualInterestRate`, `termMonths` and `currencyScale`. Requests are rate limited and
+bounded to 4 KiB. Browser credentials and bearer tokens are not forwarded by this
+anonymous gateway route. Existing business endpoints still require authentication.
+Set `PUBLIC_DEMO_PORTAL=false` to hide portal invitations from the calculator. This
+is a display option, not access control.
+
+This first staged update excludes annual summaries, scenario comparison, deployment
+configuration and later portal reliability changes. See `docs/FIRST-UPDATE.md` for
+verification status and remaining gates.

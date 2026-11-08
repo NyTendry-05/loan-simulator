@@ -3,13 +3,13 @@ import { pipeline } from 'node:stream/promises';
 
 const RESPONSE_HEADERS = ['content-type', 'content-disposition', 'location', 'www-authenticate'];
 
-export function createLoanController(service) {
+export function createLoanController(service, { anonymous = false } = {}) {
   return async (req, res) => {
     const abort = new AbortController();
     const onClose = () => { if (!res.writableEnded) abort.abort(); };
     res.on('close', onClose);
     const headers = { 'x-request-id': res.getHeader('x-request-id') };
-    for (const name of ['authorization', 'content-type', 'idempotency-key', 'accept']) {
+    for (const name of anonymous ? ['content-type', 'accept'] : ['authorization', 'content-type', 'idempotency-key', 'accept']) {
       if (req.headers[name]) headers[name] = req.headers[name];
     }
     try {
@@ -32,4 +32,3 @@ export function createLoanController(service) {
     }
   };
 }
-

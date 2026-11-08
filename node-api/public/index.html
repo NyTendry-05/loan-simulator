@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#142b49">
-  <title>NYT | Online lending</title>
+  <title>NYT | Demonstration portal</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/styles.css">
   <script type="module" src="/assets/app.js"></script>
@@ -13,9 +13,10 @@
   <main id="auth-screen" class="auth-layout" hidden>
     <header class="public-header">
       <a class="brand" href="/" aria-label="NYT Lending home"><span class="brand-symbol">N</span><span>NYT<span class="brand-caption">LENDING</span></span></a>
-      <span class="public-section">Personal lending</span>
+      <a class="public-section" href="/">← Repayment calculator</a>
       <button class="text-button" data-action="guide">How to apply <span aria-hidden="true">→</span></button>
     </header>
+    <div class="demo-banner"><strong>Demonstration portal.</strong> Use fictional names, test email addresses, sample financial details, and sample documents only. Do not enter real personal information or upload identity documents.</div>
     <div class="auth-body">
       <section class="auth-story" aria-labelledby="intro-title">
         <span class="eyebrow">ONLINE APPLICATION CENTRE</span>
@@ -41,7 +42,7 @@
             <p id="auth-error" class="form-error" role="alert" hidden></p>
             <button class="button primary wide" id="auth-submit" type="submit">Sign in</button>
           </form>
-          <div class="auth-help"><strong>New to NYT?</strong><p>Create an account to start an application. Bank employees should use the account provided by their administrator.</p></div>
+          <div class="auth-help"><strong>New to NYT?</strong><p>Use a test email address to create a demonstration account. Bank employees should use the account provided by their administrator.</p></div>
         </div>
         <div class="auth-security"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4M12 14v3"/></svg><span>Keep your sign-in details private.<br>Sign out when using a shared device.</span></div>
       </section>
@@ -62,6 +63,7 @@
     </aside>
     <div class="workspace-main">
       <div class="topbar"><span class="breadcrumb">Lending <span aria-hidden="true">/</span> <strong id="breadcrumb">Overview</strong></span><button id="refresh" class="text-button" aria-label="Refresh workspace"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg>Refresh</button></div>
+      <div class="demo-banner workspace-demo"><strong>Demonstration only.</strong> Use fictional details and sample documents. This portal does not issue loans or move money. <a href="/">Repayment calculator →</a></div>
       <main id="content" tabindex="-1"></main>
       <footer class="workspace-footer"><span>NYT Lending</span><button class="text-button" data-action="guide">Application guide</button></footer>
     </div>

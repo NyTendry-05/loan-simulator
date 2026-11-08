@@ -40,6 +40,13 @@ class LocalAuthTests {
             .content(json.writeValueAsString(Map.of("name", "Portal Customer", "email", email, "password", "a-long-test-password"))))
             .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
+    @Test void publicEstimatorWorksWithoutAUserInLocalMode() throws Exception {
+        mvc.perform(post("/api/v1/simulations/repayment").contentType("application/json")
+            .content("{\"principal\":\"1000\",\"annualInterestRate\":\"0\",\"termMonths\":3,\"currencyScale\":2}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.finalPayment").value("333.32"))
+            .andExpect(jsonPath("$.totalRepayment").value("1000.00"));
+    }
+
     @Test void registerEncryptsIdentityAndIssuesRevocableSession() throws Exception {
         String email = "owner-" + UUID.randomUUID() + "@test.invalid";
         var session = register(email);

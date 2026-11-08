@@ -12,6 +12,8 @@ export function loadConfig(env = process.env) {
     throw new Error('LOAN_SERVICE_URL must be an HTTP(S) origin without credentials');
   }
   const origins = (env.CORS_ORIGINS ?? '').split(',').map(value => value.trim()).filter(Boolean);
+  const demoPortal = env.PUBLIC_DEMO_PORTAL ?? 'true';
+  if (!['true', 'false'].includes(demoPortal)) throw new Error('PUBLIC_DEMO_PORTAL must be true or false');
   const port = integer(env.PORT, 3000, 'PORT', 65535);
   const publicOrigin = env.PUBLIC_ORIGIN ?? 'http://127.0.0.1:' + port;
   if (new URL(publicOrigin).origin !== publicOrigin || !/^https?:/.test(publicOrigin)) throw new Error('Invalid PUBLIC_ORIGIN');
@@ -29,5 +31,6 @@ export function loadConfig(env = process.env) {
     rateLimit: integer(env.RATE_LIMIT, 120, 'RATE_LIMIT'),
     shutdownTimeoutMs: integer(env.SHUTDOWN_TIMEOUT_MS, 10000, 'SHUTDOWN_TIMEOUT_MS'),
     origins,
+    publicDemoPortal: demoPortal === 'true',
   });
 }

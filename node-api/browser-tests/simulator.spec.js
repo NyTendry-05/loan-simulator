@@ -135,7 +135,7 @@ test('a delayed old estimate cannot overwrite edited inputs or a newer result', 
 test('single-payment estimate shows its actual instalment consistently', async ({ page }) => {
   await page.route(endpoint, route => route.fulfill({ status: 200, json: {
     principal: '1.00', monthlyPayment: '1.01', finalPayment: '1.00', totalInterest: '0.00', totalRepayment: '1.00',
-    repaymentMonths: 1, termMonths: 1, estimateOnly: true,
+    repaymentMonths: 1, termMonths: 1, currencyScale: 2, estimateOnly: true,
     schedule: [{ month: 1, payment: '1.00', principal: '1.00', interest: '0.00', balance: '0.00' }],
     assumptions: ['Synthetic half-even rounding fixture.'],
   } }));

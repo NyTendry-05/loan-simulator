@@ -85,10 +85,21 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium
         working-directory: node-api
       - run: sh mvnw --batch-mode --no-transfer-progress package -DskipTests
+      - name: Configure private PostgreSQL socket directory
+        run: |
+          mkdir -p .local/pg-bin
+          ln -s /usr/lib/postgresql/16/bin/postgres .local/pg-bin/postgres
+          ln -s /usr/lib/postgresql/16/bin/pg_ctl .local/pg-bin/pg_ctl
+          cat > .local/pg-bin/initdb <<'SH'
+          #!/bin/sh
+          /usr/lib/postgresql/16/bin/initdb "$@" || exit $?
+          printf "\\nunix_socket_directories = '%s'\\n" "$PWD/.local" >> .local/postgres/postgresql.conf
+          SH
+          chmod +x .local/pg-bin/initdb
       - name: Start isolated local stack with generated test credentials
         run: node scripts/local.mjs start
         env:
-          POSTGRES_BIN: /usr/lib/postgresql/16/bin
+          POSTGRES_BIN: .local/pg-bin
           LOCAL_DATABASE_PORT: '55432'
           ADMIN_EMAIL: admin@test.invalid
           ADMIN_NAME: admin
@@ -98,4 +109,4 @@ jobs:
         if: always()
         run: node scripts/local.mjs stop
         env:
-          POSTGRES_BIN: /usr/lib/postgresql/16/bin
+          POSTGRES_BIN: .local/pg-bin

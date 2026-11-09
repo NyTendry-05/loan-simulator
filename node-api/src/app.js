@@ -8,7 +8,7 @@ import { createLoanService } from './services/loan-service.js';
 import { createLoanController } from './controllers/loan-controller.js';
 import { loanRoutes } from './routes/loan-routes.js';
 import { createSessionController, cookieAuthentication, requireSameOrigin } from './controllers/session-controller.js';
-import { portalView, publicDirectory } from './controllers/view-controller.js';
+import { portalView, simulatorView, publicDirectory } from './controllers/view-controller.js';
 
 export function createApp(config, fetchImpl = fetch) {
   const app = express();
@@ -32,8 +32,16 @@ export function createApp(config, fetchImpl = fetch) {
   }));
   app.get('/health', (_req, res) => res.json({ status: 'UP' }));
   app.use('/assets', express.static(publicDirectory, { index: false, dotfiles: 'deny' }));
-  app.get('/', portalView);
+  app.get('/', simulatorView(config));
+  app.get('/portal', portalView);
   const service = createLoanService(config, fetchImpl);
+  const simulationLimit = rateLimit({ windowMs: config.rateWindowMs, limit: Math.min(config.rateLimit, 60),
+    standardHeaders: 'draft-8', legacyHeaders: false,
+    handler: (_req, _res, next) => next(new ApiError(429, 'Request limit exceeded. Please wait a moment and try again')) });
+  app.post('/api/v1/simulations/repayment', simulationLimit, (req, _res, next) => {
+    if (!req.is('application/json')) return next(new ApiError(415, 'Use application/json for simulation requests'));
+    next();
+  }, express.raw({ type: 'application/json', limit: '4kb', inflate: false }), createLoanController(service, { anonymous: true }));
   const sessions = createSessionController(config, service);
   app.use('/auth', rateLimit({ windowMs: config.rateWindowMs, limit: Math.min(config.rateLimit, 20),
     standardHeaders: 'draft-8', legacyHeaders: false }));

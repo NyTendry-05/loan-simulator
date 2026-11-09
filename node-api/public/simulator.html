@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#142b49">
+  <meta name="description" content="Explore fixed-rate loan repayments with a transparent, no-account calculator. Compare monthly payments, total interest, and a full repayment schedule.">
+  <title>NYT | Loan repayment simulator</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/simulator.css">
+  <script type="module" src="/assets/simulator.js"></script>
+</head>
+<body class="simulator-page">
+  <a class="skip-link" href="#calculator">Skip to calculator</a>
+  <header class="sim-header">
+    <a class="brand" href="/" aria-label="NYT Lending home"><span class="brand-symbol">N</span><span>NYT<span class="brand-caption">LENDING</span></span></a>
+    <nav aria-label="Public navigation"><a href="#how-it-works">How it works</a><!-- DEMO_PORTAL_START --><a class="button secondary" href="/portal">Explore demo portal <span aria-hidden="true">↗</span></a><!-- DEMO_PORTAL_END --></nav>
+  </header>
+  <main class="sim-main">
+    <section class="sim-intro" aria-labelledby="sim-title">
+      <div><span class="eyebrow">THE LOAN REPAYMENT SIMULATOR</span><h1 id="sim-title">Plan with numbers.<br><em>Borrow with clarity.</em></h1><p>See what a fixed-rate loan could cost. Adjust the amount, rate, and term to explore a repayment plan that makes sense to you.</p></div>
+      <aside class="intro-note"><span class="note-mark" aria-hidden="true">↗</span><h2>Simple inputs.<br>The complete picture.</h2><p>Monthly payments, total interest, and every instalment. No account or personal details needed.</p><span class="simulation-tag">PORTFOLIO DEMONSTRATION</span></aside>
+    </section>
+    <div class="sim-disclaimer"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg><p><strong>Simulation only.</strong> This is an illustrative estimate, not a lending offer, approval, or financial advice. No credit check is performed. Fees, insurance, taxes, and variable rates are excluded.</p></div>
+    <section id="calculator" class="calculator" aria-labelledby="calculator-title" tabindex="-1">
+      <div class="calculator-inputs">
+        <div class="section-kicker"><span>01</span> YOUR SCENARIO</div><h2 id="calculator-title">Make it your own.</h2><p class="muted calculator-caption">Start with the example below, then change any value.</p>
+        <form id="simulation-form" novalidate>
+          <label for="sim-currency"><span id="currency-label">Display currency</span><select id="sim-currency" aria-labelledby="currency-label" name="currency" aria-describedby="currency-help"><option value="USD">USD — US dollar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — British pound</option><option value="CAD">CAD — Canadian dollar</option><option value="AUD">AUD — Australian dollar</option><option value="ZAR">ZAR — South African rand</option><option value="JPY">JPY — Japanese yen</option></select><span id="currency-help" class="help">A display unit only. No exchange-rate conversion.</span></label>
+          <label for="sim-principal"><span id="principal-label">Loan amount</span><span class="input-unit"><input id="sim-principal" aria-labelledby="principal-label" name="principal" type="number" inputmode="decimal" min="0.01" max="999999999999.99" step="0.01" value="25000" required aria-describedby="principal-help principal-error"><span id="amount-unit" aria-hidden="true">USD</span></span><span id="principal-help" class="help">The amount borrowed, before interest.</span><span class="field-error" id="principal-error" hidden></span></label>
+          <div class="sim-field-row"><label for="sim-rate"><span id="rate-label">Annual interest rate</span><span class="input-unit"><input id="sim-rate" aria-labelledby="rate-label" name="annualInterestRate" type="number" inputmode="decimal" min="0" max="100" step="0.000001" value="7.5" required aria-describedby="rate-error"><span aria-hidden="true">%</span></span><span class="field-error" id="rate-error" hidden></span></label><label for="sim-term"><span id="term-label">Repayment term</span><span class="input-unit"><input id="sim-term" aria-labelledby="term-label" name="termMonths" type="number" inputmode="numeric" min="1" max="1200" step="1" value="60" required aria-describedby="term-help term-error"><span aria-hidden="true">months</span></span><span class="help" id="term-help">5 years</span><span class="field-error" id="term-error" hidden></span></label></div>
+          <p class="form-error" id="simulation-error" role="alert" hidden></p>
+          <button class="button primary wide calculate-button" id="calculate" type="submit">Calculate repayments <span aria-hidden="true">→</span></button>
+          <button class="text-button reset-example" id="reset-example" type="button">Reset example</button>
+        </form>
+        <p class="calculator-footnote">Fixed interest · Monthly instalments · No fees<br>Calculator bounds are technical limits, not lending criteria.</p>
+      </div>
+      <div class="calculator-results" id="simulation-results" aria-busy="false">
+        <div class="estimate-heading"><div class="section-kicker"><span>02</span> YOUR ESTIMATE</div><span id="result-state" class="result-state">Illustrative example</span></div>
+        <div id="result-placeholder" class="result-placeholder"><div class="placeholder-symbol" aria-hidden="true">↗</div><h2>Your next step, in numbers.</h2><p>Calculate your scenario to see the monthly payment, total cost, and repayment schedule.</p></div>
+        <div id="result-content" hidden>
+          <div class="monthly-estimate"><h2 id="payment-heading">Estimated monthly payment</h2><p class="monthly-amount" id="monthly-payment"></p><p id="estimate-context" class="estimate-context"></p></div>
+          <div class="cost-summary"><div><span>Total repayment</span><strong id="total-repayment"></strong></div><div><span>Total interest</span><strong id="total-interest"></strong></div></div>
+          <div class="cost-breakdown"><div class="breakdown-title"><h3>Where your repayments go</h3><span id="interest-share"></span></div><meter id="principal-meter" min="0" max="100" value="0" aria-label="Principal as a percentage of total repayment"></meter><div class="breakdown-legend"><span><i class="principal-dot" aria-hidden="true"></i>Principal <strong id="principal-total"></strong></span><span><i class="interest-dot" aria-hidden="true"></i>Interest <strong id="interest-total"></strong></span></div></div>
+          <p id="final-payment-note" class="final-payment-note"></p>
+          <a class="schedule-link" href="#repayment-schedule">See the repayment schedule <span aria-hidden="true">↓</span></a>
+        </div>
+        <p id="calculation-status" class="calculation-status" role="status" aria-live="polite"></p>
+        <p class="estimate-footnote">The same inputs always produce the same calculation. This simulator does not assess eligibility or make credit decisions.</p>
+      </div>
+    </section>
+    <section id="repayment-schedule" class="repayment-section" aria-labelledby="schedule-title" hidden>
+      <div class="schedule-heading"><div><span class="eyebrow">EVERY PAYMENT, EXPLAINED</span><h2 id="schedule-title">Your repayment schedule.</h2><p id="schedule-description" class="muted"></p></div><button class="button secondary" id="download-schedule" type="button">Download CSV <span aria-hidden="true">↓</span></button></div>
+      <div class="schedule-panel"><div class="table-wrap" tabindex="0" role="region" aria-label="Repayment schedule, scroll horizontally on smaller screens"><table class="schedule-table"><caption class="sr-only">Estimated monthly loan repayment schedule</caption><thead><tr><th scope="col">Month</th><th scope="col">Payment</th><th scope="col">Principal</th><th scope="col">Interest</th><th scope="col">Balance</th></tr></thead><tbody id="schedule-rows"></tbody></table></div><div class="schedule-pager"><p id="schedule-page" role="status"></p><div><button class="button secondary" id="previous-schedule" aria-label="Previous 12 payments">← Previous</button><button class="button secondary" id="next-schedule" aria-label="Next 12 payments">Next →</button></div></div></div>
+      <details class="assumptions"><summary>Calculation assumptions &amp; rounding</summary><ul id="calculation-assumptions"></ul><p>Actual lender terms, payment dates, fees, or rounding may differ. The annual rate entered is a nominal fixed interest rate, not a fee-inclusive APR.</p></details>
+    </section>
+    <section id="how-it-works" class="how-it-works" aria-labelledby="how-title"><div><span class="eyebrow">UNDERSTAND THE NUMBERS</span><h2 id="how-title">A little context goes a long way.</h2></div><div class="explanation-grid"><article><span>01 / MONTHLY PAYMENT</span><h3>A regular commitment.</h3><p>Your payment includes principal and interest. A longer term usually lowers the monthly amount while increasing total interest.</p></article><article><span>02 / TOTAL INTEREST</span><h3>The cost of borrowing.</h3><p>Interest is calculated on the remaining balance each month. Compare total interest alongside the monthly payment.</p></article><article><span>03 / REPAYMENT SCHEDULE</span><h3>A transparent path to zero.</h3><p>See how each payment reduces your balance. Rounding can make the final payment smaller than the regular amount.</p></article></div></section>
+    <!-- DEMO_PORTAL_START --><section class="portal-invitation"><div><span class="eyebrow">EXPLORE THE APPLICATION WORKFLOW</span><h2>Beyond the calculator.</h2><p>The demo portal includes customer applications, document review, and staff administration. Use fictional details and sample documents only.</p></div><a class="button secondary" href="/portal">Open demo portal <span aria-hidden="true">↗</span></a></section><!-- DEMO_PORTAL_END -->
+  </main>
+  <footer class="sim-footer"><span>NYT Lending <span class="footer-dot">·</span> Portfolio demonstration</span><span>Transparent calculations. No personal data required.</span></footer>
+  <noscript><div class="noscript-notice">Enable JavaScript to use the repayment calculator. No account is required.</div></noscript>
+</body>
+</html>

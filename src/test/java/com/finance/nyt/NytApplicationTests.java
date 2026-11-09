@@ -253,6 +253,36 @@ class NytApplicationTests {
         mvc.perform(as(post("/api/v1/applications/" + submitted + "/withdraw"), owner, "CUSTOMER")).andExpect(status().isOk());
     }
 
+    @Test void publicSimulationIsAnonymousValidatedAndNonPersistent() throws Exception {
+        long count = jdbc.queryForObject("select count(*) from loan_applications", Long.class);
+        mvc.perform(post("/api/v1/simulations/repayment").contentType("application/json")
+            .content("{\"principal\":\"1200\",\"annualInterestRate\":\"12\",\"termMonths\":12,\"currencyScale\":2}"))
+            .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.estimateOnly").value(true))
+            .andExpect(jsonPath("$.monthlyPayment").value("106.62"))
+            .andExpect(jsonPath("$.schedule.length()").value(12))
+            .andExpect(jsonPath("$.schedule[11].balance").value("0.00"));
+        assertThat(jdbc.queryForObject("select count(*) from loan_applications", Long.class)).isEqualTo(count);
+        for (var invalid : List.of(Map.of("principal", "0"), Map.of("principal", "-1"),
+                Map.of("principal", "1000000000000000"), Map.of("principal", "1.00001"),
+                Map.of("annualInterestRate", "-0.1"), Map.of("annualInterestRate", "100.000001"),
+                Map.of("annualInterestRate", "0.0000001"), Map.of("termMonths", 0), Map.of("termMonths", 1201),
+                Map.of("termMonths", 1.5), Map.of("currencyScale", -1), Map.of("currencyScale", 5), Map.of("currencyScale", 2.5))) {
+            Map<String, Object> body = new HashMap<>(Map.of("principal", "1200", "annualInterestRate", "12", "termMonths", 12, "currencyScale", 2));
+            body.putAll(invalid);
+            mvc.perform(post("/api/v1/simulations/repayment").contentType("application/json")
+                .content(json.writeValueAsString(body))).andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/v1/simulations/repayment").contentType("application/json").content("{}"))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/simulations/repayment").contentType("application/json").content("{invalid"))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/simulations/repayment").contentType("application/json")
+            .content("{\"principal\":\"12.001\",\"annualInterestRate\":\"0\",\"termMonths\":12,\"currencyScale\":2}"))
+            .andExpect(status().isUnprocessableEntity());
+        mvc.perform(get("/api/v1/products")).andExpect(status().isUnauthorized());
+    }
+
     @Test void concurrentReviewClaimsHaveExactlyOneWinner() throws Exception {
         String id = create("concurrent"); document("concurrent", id); submit("concurrent", id);
         var gate = new CountDownLatch(1);

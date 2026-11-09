@@ -26,7 +26,7 @@ public class SecurityConfig {
         return http.csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> {
-                a.requestMatchers("/health").permitAll();
+                a.requestMatchers("/health", "/api/v1/simulations/repayment").permitAll();
                 if (mode.equals("local")) a.requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll();
                 a.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").hasRole("ADMIN").anyRequest().authenticated();
             })

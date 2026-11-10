@@ -1,4 +1,4 @@
-import { formatMoney, paymentHeadline } from './calculator-utils.js';
+import { formatMoney, paymentHeadline, summarizeSchedule, scheduleToCsv } from './calculator-utils.js';
 
 const $ = selector => document.querySelector(selector);
 const form = $('#simulation-form');
@@ -89,25 +89,35 @@ function money(value) {
 }
 function renderSchedule() {
   const start = page * pageSize;
-  const rows = current.data.schedule.slice(start, start + pageSize);
+  const yearly = $('#schedule-view').value === 'annual';
+  const schedule = yearly ? current.annual : current.data.schedule;
+  const rows = schedule.slice(start, start + pageSize);
+  $('#schedule-period-heading').textContent = yearly ? 'Loan year' : 'Month';
+  $('#schedule-caption').textContent = yearly ? 'Estimated annual loan repayment summary' : 'Estimated monthly loan repayment schedule';
+  $('#schedule-frequency-note').hidden = !yearly;
+  $('#previous-schedule').setAttribute('aria-label', yearly ? 'Previous 12 years' : 'Previous 12 payments');
+  $('#next-schedule').setAttribute('aria-label', yearly ? 'Next 12 years' : 'Next 12 payments');
   const fragment = document.createDocumentFragment();
   for (const row of rows) {
     const tr = document.createElement('tr');
     for (const key of ['month', 'payment', 'principal', 'interest', 'balance']) {
       const cell = document.createElement(key === 'month' ? 'th' : 'td');
       if (key === 'month') cell.scope = 'row';
-      cell.textContent = key === 'month' ? row.month : money(row[key]);
+      cell.textContent = key === 'month' ? (yearly ? 'Year ' + row.year + ' (months ' + row.firstMonth + '–' + row.lastMonth + ')' : row.month) : money(row[key]);
       tr.append(cell);
     }
     fragment.append(tr);
   }
   $('#schedule-rows').replaceChildren(fragment);
-  $('#schedule-page').textContent = 'Payments ' + (start + 1) + '–' + (start + rows.length) + ' of ' + current.data.schedule.length;
+  $('#schedule-page').textContent = (yearly ? 'Years ' : 'Payments ') + (start + 1) + '–' + (start + rows.length) + ' of ' + schedule.length;
   $('#previous-schedule').disabled = page === 0;
-  $('#next-schedule').disabled = start + rows.length >= current.data.schedule.length;
+  $('#next-schedule').disabled = start + rows.length >= schedule.length;
 }
 function renderResult(snapshot, data) {
-  current = { ...snapshot, data }; page = 0;
+  let annual;
+  try { annual = summarizeSchedule(data.schedule, snapshot.body.currencyScale); }
+  catch { throw new Error('The calculator returned an incomplete or inconsistent schedule. Please try again.'); }
+  current = { ...snapshot, data, annual }; page = 0;
   const headline = paymentHeadline(data);
   $('#payment-heading').textContent = headline.single ? 'Estimated single payment' : 'Estimated monthly payment';
   $('#monthly-payment').textContent = money(headline.amount);
@@ -162,15 +172,15 @@ async function calculate() {
 }
 form.addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('#reset-example').addEventListener('click', () => { form.reset(); invalidate(); calculate(); });
+$('#schedule-view').addEventListener('change', () => { if (current) { page = 0; renderSchedule(); } });
 $('#previous-schedule').addEventListener('click', () => { if (current && page > 0) { page--; renderSchedule(); } });
-$('#next-schedule').addEventListener('click', () => { if (current && (page + 1) * pageSize < current.data.schedule.length) { page++; renderSchedule(); } });
+$('#next-schedule').addEventListener('click', () => { if (current && (page + 1) * pageSize < ($('#schedule-view').value === 'annual' ? current.annual.length : current.data.schedule.length)) { page++; renderSchedule(); } });
 $('#download-schedule').addEventListener('click', () => {
   if (!current) return;
-  const rows = [['Month', 'Payment (' + current.currency + ')', 'Principal (' + current.currency + ')', 'Interest (' + current.currency + ')', 'Balance (' + current.currency + ')'],
-    ...current.data.schedule.map(row => [row.month, row.payment, row.principal, row.interest, row.balance])];
-  const csv = rows.map(row => row.join(',')).join('\r\n') + '\r\n';
+  const frequency = $('#schedule-view').value;
+  const csv = scheduleToCsv(current.data.schedule, current.currency, current.body.currencyScale, frequency);
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a'); link.href = url; link.download = 'repayment-simulation-' + current.currency + '.csv';
+  const link = document.createElement('a'); link.href = url; link.download = 'repayment-simulation-' + (frequency === 'annual' ? 'annual-' : '') + current.currency + '.csv';
   document.body.append(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });

@@ -96,3 +96,9 @@ input[aria-invalid=true] { border-color:#a52f32; }
 .breakdown-legend strong { overflow-wrap:anywhere; }
 .calculator-inputs input[type=number] { appearance:textfield; -moz-appearance:textfield; }
 .calculator-inputs input::-webkit-inner-spin-button,.calculator-inputs input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+
+.schedule-controls { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; flex-shrink:0; }
+.schedule-controls label { margin:0; font-size:11px; min-width:165px; }
+.schedule-controls select { min-height:44px; font-size:12px; }
+.schedule-note { font-size:12px; max-width:850px; margin:0 0 18px; }
+@media(max-width:1000px) { .schedule-heading { flex-wrap:wrap; }.schedule-controls { max-width:100%; flex-shrink:1; } }

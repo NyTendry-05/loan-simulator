@@ -8,8 +8,9 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --coverage",
-    "lint": "eslint ."
+    "test": "npm run test:calculator && node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --coverage",
+    "lint": "eslint .",
+    "test:calculator": "node --test unit-tests/*.test.js"
   },
   "dependencies": {
     "cors": "2.8.6",

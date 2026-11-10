@@ -261,6 +261,19 @@ anonymous gateway route. Existing business endpoints still require authenticatio
 Set `PUBLIC_DEMO_PORTAL=false` to hide portal invitations from the calculator. This
 is a display option, not access control.
 
-This first staged update excludes annual summaries, scenario comparison, deployment
-configuration and later portal reliability changes. See `docs/FIRST-UPDATE.md` for
-verification status and remaining gates.
+The original staged release is documented in `docs/FIRST-UPDATE.md`.
+
+### Annual repayment summary
+
+Use **Schedule view** to switch between individual monthly payments and annual
+totals. Each loan year groups up to 12 payments starting with payment 1, rather than
+a calendar or tax year. The final year can be shorter, including early payoff.
+Payment, principal and interest totals are summed exactly from the service ledger;
+each balance is the balance after that year’s last payment.
+
+**Download CSV** exports the selected view. Annual CSV includes the first and last
+payment month for every loan year. Monthly CSV keeps its existing format.
+See `docs/ANNUAL-SUMMARY.md` for scope and verification commands.
+
+Scenario comparisons, deployment configuration and later portal reliability changes
+remain separate future increments.

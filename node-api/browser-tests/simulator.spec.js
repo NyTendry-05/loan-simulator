@@ -145,3 +145,77 @@ test('single-payment estimate shows its actual instalment consistently', async (
   await expect(page.locator('#total-repayment')).toHaveText('$1.00');
   await expect(page.locator('#calculation-status')).toContainText('$1.00 in one payment');
 });
+
+test('annual summary resets pagination, exports partial years and switches back to monthly', async ({ page }) => {
+  await mockCalculator(page); await page.goto(baseURL);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await fillScenario(page, { amount: '2500', term: '25' });
+  await page.getByRole('button', { name: 'Next 12 payments' }).click();
+  await expect(page.locator('#schedule-page')).toHaveText('Payments 13–24 of 25');
+  await page.getByLabel('Schedule view').selectOption('annual');
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–3 of 3');
+  await expect(page.locator('#schedule-rows tr')).toHaveCount(3);
+  await expect(page.locator('#schedule-rows tr').first()).toHaveText('Year 1 (months 1–12)$1,200.00$1,200.00$0.00$1,300.00');
+  await expect(page.locator('#schedule-rows tr').last()).toContainText('Year 3 (months 25–25)');
+  await expect(page.locator('#schedule-frequency-note')).toContainText('not a calendar or tax year');
+  await expect(page.getByRole('button', { name: 'Previous 12 years' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Next 12 years' })).toBeDisabled();
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download CSV' }).click();
+  const file = await downloaded;
+  expect(file.suggestedFilename()).toBe('repayment-simulation-annual-USD.csv');
+  const csv = await readFile(await file.path(), 'utf8');
+  expect(csv.trim().split('\r\n')).toHaveLength(4);
+  expect(csv).toContain('3,25,25,100.00,100.00,0.00,0.00\r\n');
+  await page.getByLabel('Schedule view').selectOption('monthly');
+  await expect(page.locator('#schedule-page')).toHaveText('Payments 1–12 of 25');
+  await expect(page.locator('#schedule-frequency-note')).toBeHidden();
+});
+
+test('annual view handles maximum term, repeated switching and a new zero-decimal estimate', async ({ page }) => {
+  await mockCalculator(page); await page.setViewportSize({ width: 320, height: 740 }); await page.goto(baseURL);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await fillScenario(page, { amount: '1200', term: '1200' });
+  await page.getByLabel('Schedule view').selectOption('annual');
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–12 of 100');
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Next 12 years' }).click();
+  await expect(page.locator('#schedule-page')).toHaveText('Years 97–100 of 100');
+  await expect(page.getByRole('button', { name: 'Next 12 years' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Previous 12 years' }).click();
+  await expect(page.locator('#schedule-page')).toHaveText('Years 85–96 of 100');
+  await page.getByLabel('Schedule view').selectOption('monthly');
+  await page.getByLabel('Schedule view').selectOption('annual');
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–12 of 100');
+  await page.getByLabel('Loan amount', { exact: true }).fill('2');
+  await expect(page.locator('#repayment-schedule')).toBeHidden();
+  await fillScenario(page, { amount: '2', term: '1200', currency: 'JPY' });
+  await expect(page.locator('#schedule-view')).toHaveValue('annual');
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–1 of 1');
+  await expect(page.locator('#schedule-rows tr')).toHaveText('Year 1 (months 1–2)¥2¥2¥0¥0');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('inconsistent response ledger clears both views and allows a clean retry', async ({ page }) => {
+  await mockCalculator(page); await page.goto(baseURL);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await page.getByLabel('Schedule view').selectOption('annual');
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–5 of 5');
+  await page.unroute(endpoint);
+  await page.route(endpoint, route => {
+    const response = result(route.request().postDataJSON());
+    response.schedule[0].payment = '1.00';
+    return route.fulfill({ status: 200, json: response });
+  });
+  await fillScenario(page);
+  await expect(page.locator('#simulation-error')).toContainText('incomplete or inconsistent schedule');
+  await expect(page.locator('#repayment-schedule')).toBeHidden();
+  await expect(page.locator('#result-content')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Download CSV' })).toBeHidden();
+  await expect(page.locator('#calculate')).toBeEnabled();
+  await expect(page.locator('#sim-principal')).toHaveValue('1200');
+  await page.unroute(endpoint); await mockCalculator(page);
+  await page.getByRole('button', { name: 'Calculate repayments' }).click();
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–1 of 1');
+  await page.getByLabel('Schedule view').selectOption('monthly');
+  await expect(page.locator('#schedule-page')).toHaveText('Payments 1–12 of 12');
+});

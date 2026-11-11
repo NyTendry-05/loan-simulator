@@ -275,5 +275,10 @@ each balance is the balance after that year’s last payment.
 payment month for every loan year. Monthly CSV keeps its existing format.
 See `docs/ANNUAL-SUMMARY.md` for scope and verification commands.
 
+Before displaying or exporting an estimate, the calculator checks that its amount,
+rate, term, currency precision and totals agree with the request and exact monthly
+ledger. Inconsistent responses leave your inputs available for a fresh calculation.
+See `docs/REPAYMENT-CONSISTENCY.md` for the validation scope.
+
 Scenario comparisons, deployment configuration and later portal reliability changes
 remain separate future increments.

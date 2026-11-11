@@ -135,7 +135,7 @@ test('a delayed old estimate cannot overwrite edited inputs or a newer result', 
 test('single-payment estimate shows its actual instalment consistently', async ({ page }) => {
   await page.route(endpoint, route => route.fulfill({ status: 200, json: {
     principal: '1.00', monthlyPayment: '1.01', finalPayment: '1.00', totalInterest: '0.00', totalRepayment: '1.00',
-    repaymentMonths: 1, termMonths: 1, currencyScale: 2, estimateOnly: true,
+    annualInterestRate: '6', repaymentMonths: 1, termMonths: 1, currencyScale: 2, estimateOnly: true,
     schedule: [{ month: 1, payment: '1.00', principal: '1.00', interest: '0.00', balance: '0.00' }],
     assumptions: ['Synthetic half-even rounding fixture.'],
   } }));
@@ -207,7 +207,7 @@ test('inconsistent response ledger clears both views and allows a clean retry', 
     return route.fulfill({ status: 200, json: response });
   });
   await fillScenario(page);
-  await expect(page.locator('#simulation-error')).toContainText('incomplete or inconsistent schedule');
+  await expect(page.locator('#simulation-error')).toContainText('incomplete or inconsistent result');
   await expect(page.locator('#repayment-schedule')).toBeHidden();
   await expect(page.locator('#result-content')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Download CSV' })).toBeHidden();
@@ -218,4 +218,53 @@ test('inconsistent response ledger clears both views and allows a clean retry', 
   await expect(page.locator('#schedule-page')).toHaveText('Years 1–1 of 1');
   await page.getByLabel('Schedule view').selectOption('monthly');
   await expect(page.locator('#schedule-page')).toHaveText('Payments 1–12 of 12');
+});
+
+test('mismatched response summaries are hidden, preserve inputs and allow a clean retry', async ({ page }) => {
+  await mockCalculator(page); await page.goto(baseURL);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await page.getByLabel('Schedule view').selectOption('annual');
+  for (const key of ['principal', 'annualInterestRate', 'monthlyPayment', 'finalPayment', 'totalInterest', 'totalRepayment']) {
+    await page.unroute(endpoint);
+    await page.route(endpoint, route => {
+      const response = result(route.request().postDataJSON()); response[key] = '999';
+      return route.fulfill({ status: 200, json: response });
+    });
+    await fillScenario(page);
+    await expect(page.locator('#simulation-error')).toHaveText('The calculator returned an incomplete or inconsistent result. Please try again.');
+    await expect(page.locator('#result-content')).toBeHidden();
+    await expect(page.locator('#repayment-schedule')).toBeHidden();
+    await expect(page.locator('#sim-principal')).toHaveValue('1200');
+    await expect(page.locator('#calculate')).toBeEnabled();
+    await expect(page.locator('#simulation-results')).toHaveAttribute('aria-busy', 'false');
+  }
+  await page.unroute(endpoint); await mockCalculator(page);
+  await page.getByRole('button', { name: 'Calculate repayments' }).click();
+  await expect(page.locator('#simulation-error')).toBeHidden();
+  await expect(page.locator('#monthly-payment')).toHaveText('$100.00');
+  await expect(page.locator('#schedule-page')).toHaveText('Years 1–1 of 1');
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download CSV' }).click();
+  const file = await downloaded;
+  expect(file.suggestedFilename()).toBe('repayment-simulation-annual-USD.csv');
+  expect(await readFile(await file.path(), 'utf8')).toContain('1,1,12,1200.00,1200.00,0.00,0.00\r\n');
+});
+
+test('a single-payment headline uses the actual debit and resets on a new monthly estimate', async ({ page }) => {
+  await page.route(endpoint, route => {
+    const response = result(route.request().postDataJSON());
+    if (response.repaymentMonths === 1) response.monthlyPayment = '999.00';
+    return route.fulfill({ status: 200, json: response });
+  });
+  await page.goto(baseURL);
+  await fillScenario(page, { amount: '1', term: '1' });
+  await expect(page.locator('#payment-heading')).toHaveText('Estimated single payment');
+  await expect(page.locator('#monthly-payment')).toHaveText('$1.00');
+  await expect(page.locator('#total-repayment')).toHaveText('$1.00');
+  await expect(page.locator('#estimate-context')).toContainText('1 payment ·');
+  await expect(page.locator('#calculation-status')).toContainText('$1.00 in one payment;');
+  await fillScenario(page);
+  await expect(page.locator('#payment-heading')).toHaveText('Estimated monthly payment');
+  await expect(page.locator('#monthly-payment')).toHaveText('$100.00');
+  await expect(page.locator('#calculation-status')).toContainText('$100.00 per month;');
 });

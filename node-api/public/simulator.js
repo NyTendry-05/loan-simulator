@@ -1,4 +1,4 @@
-import { formatMoney, paymentHeadline, summarizeSchedule, scheduleToCsv } from './calculator-utils.js';
+import { formatMoney, reconcileRepaymentResult, scheduleToCsv } from './calculator-utils.js';
 
 const $ = selector => document.querySelector(selector);
 const form = $('#simulation-form');
@@ -74,15 +74,6 @@ function validate() {
   }
   return { currency, body: { principal, annualInterestRate, termMonths: Number(term), currencyScale } };
 }
-function validResult(data, body) {
-  const amount = value => typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value) && Number.isFinite(Number(value)) && (value.split('.')[1]?.length ?? 0) <= body.currencyScale;
-  return data?.estimateOnly === true && data.currencyScale === body.currencyScale && data.termMonths === body.termMonths
-    && Number(data.principal) > 0 && Number(data.totalRepayment) > 0 && ['principal', 'monthlyPayment', 'finalPayment', 'totalInterest', 'totalRepayment'].every(key => amount(data[key]))
-    && Array.isArray(data.schedule) && data.schedule.length > 0 && data.schedule.length <= 1200
-    && data.repaymentMonths === data.schedule.length && data.repaymentMonths <= body.termMonths
-    && data.schedule.every((row, index) => row.month === index + 1 && ['payment', 'principal', 'interest', 'balance'].every(key => amount(row[key])))
-    && Array.isArray(data.assumptions) && data.assumptions.every(value => typeof value === 'string');
-}
 const numberFormat = new Intl.NumberFormat('en', { maximumFractionDigits: 6 });
 function money(value) {
   return formatMoney(value, current.currency, current.body.currencyScale);
@@ -113,12 +104,9 @@ function renderSchedule() {
   $('#previous-schedule').disabled = page === 0;
   $('#next-schedule').disabled = start + rows.length >= schedule.length;
 }
-function renderResult(snapshot, data) {
-  let annual;
-  try { annual = summarizeSchedule(data.schedule, snapshot.body.currencyScale); }
-  catch { throw new Error('The calculator returned an incomplete or inconsistent schedule. Please try again.'); }
+function renderResult(snapshot, data, validated) {
+  const { annual, headline } = validated;
   current = { ...snapshot, data, annual }; page = 0;
-  const headline = paymentHeadline(data);
   $('#payment-heading').textContent = headline.single ? 'Estimated single payment' : 'Estimated monthly payment';
   $('#monthly-payment').textContent = money(headline.amount);
   $('#total-repayment').textContent = money(data.totalRepayment);
@@ -158,8 +146,10 @@ async function calculate() {
     if (!response.ok) throw new Error(response.status === 429 ? 'Too many calculations. Please wait a minute, then try again.'
       : response.status >= 500 ? 'The calculator is temporarily unavailable. Please try again shortly.'
       : data?.detail ?? 'These values could not be calculated. Check your inputs and try again.');
-    if (!validResult(data, snapshot.body)) throw new Error('The calculator returned an incomplete result. Please try again.');
-    renderResult(snapshot, data);
+    let validated;
+    try { validated = reconcileRepaymentResult(data, snapshot.body); }
+    catch { throw new Error('The calculator returned an incomplete or inconsistent result. Please try again.'); }
+    renderResult(snapshot, data, validated);
   } catch (error) {
     if (requestGeneration !== generation) return;
     const message = ['TimeoutError', 'AbortError', 'TypeError'].includes(error.name)

@@ -18,7 +18,9 @@ while keeping the first release’s actual single-payment display fix.
   remain compatible.
 - The helper rejects malformed amounts, invalid order, inconsistent monthly rows,
   unpaid balances and payments after payoff before displaying or exporting a ledger.
-  This is ledger validation, not full request/response or financial-formula validation.
+  This increment validates the ledger. The subsequent
+  [repayment consistency check](REPAYMENT-CONSISTENCY.md) also reconciles the request
+  and summary totals without reimplementing the financial formula.
 - Changing inputs removes stale results. Incomplete or inconsistent ledgers leave
   the inputs available for retry without displaying or exporting the old estimate.
 

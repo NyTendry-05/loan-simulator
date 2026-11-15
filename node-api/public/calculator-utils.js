@@ -17,7 +17,7 @@ export function paymentHeadline(result) {
 // API money stays in decimal strings. Never sum monetary values with Number:
 // even a valid large principal can exceed its safe integer precision in cents.
 function minorUnits(value, scale) {
-  if (typeof value !== 'string' || !/^\d{1,24}(?:\.\d{1,4})?$/.test(value))
+  if (typeof value !== 'string' || !/^\d{1,24}(?:\.\d{1,6})?$/.test(value))
     throw new TypeError('Invalid decimal amount');
   const [whole, fraction = ''] = value.split('.');
   if (fraction.length > scale) throw new RangeError('Amount exceeds currency precision');
@@ -52,6 +52,40 @@ export function summarizeSchedule(schedule, scale) {
   if (previousBalance !== 0n) throw new RangeError('Schedule does not repay the balance');
   return years.map(year => ({ ...year, payment: decimal(year.payment, scale),
     principal: decimal(year.principal, scale), interest: decimal(year.interest, scale), balance: decimal(year.balance, scale) }));
+}
+
+/** Bind an estimate to its request and reconcile its cards with the exact ledger.
+ * This checks consistency only; the Java service remains the calculation authority.
+ * Return the validated annual view and the existing single/monthly payment headline.
+ */
+export function reconcileRepaymentResult(data, request) {
+  const scale = request?.currencyScale;
+  if (!Number.isInteger(scale) || scale < 0 || scale > 4
+    || !Number.isInteger(request?.termMonths) || request.termMonths < 1 || request.termMonths > 1200
+    || data?.estimateOnly !== true || data.currencyScale !== scale || data.termMonths !== request.termMonths
+    || !Number.isInteger(data.repaymentMonths) || data.repaymentMonths < 1 || data.repaymentMonths > request.termMonths
+    || !Array.isArray(data.schedule) || data.repaymentMonths !== data.schedule.length
+    || !Array.isArray(data.assumptions) || !data.assumptions.every(value => typeof value === 'string'))
+    throw new TypeError('Invalid repayment result metadata');
+
+  const principal = minorUnits(data.principal, scale);
+  const rate = minorUnits(data.annualInterestRate, 6);
+  if (principal <= 0n || principal !== minorUnits(request.principal, scale)
+    || rate > 100_000000n || rate !== minorUnits(request.annualInterestRate, 6))
+    throw new RangeError('Repayment result does not match the requested scenario');
+
+  const annual = summarizeSchedule(data.schedule, scale);
+  const total = key => annual.reduce((sum, year) => sum + minorUnits(year[key], scale), 0n);
+  const regular = minorUnits(data.monthlyPayment, scale);
+  if (total('principal') !== principal || total('payment') !== minorUnits(data.totalRepayment, scale)
+    || total('interest') !== minorUnits(data.totalInterest, scale)
+    || minorUnits(data.finalPayment, scale) !== minorUnits(data.schedule.at(-1).payment, scale)
+    || regular <= 0n || data.schedule.slice(0, -1).some(row => minorUnits(row.payment, scale) !== regular))
+    throw new RangeError('Repayment result totals do not reconcile with the schedule');
+  // A single final debit can differ from the formula's rounded regular payment.
+  // Present the actual ledger amount rather than an uncheckable advertised amount.
+  const headline = paymentHeadline(data);
+  return { annual, headline };
 }
 
 /** Export exact amounts, with explicit payment-month ranges for partial loan years. */

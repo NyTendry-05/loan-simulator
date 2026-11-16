@@ -138,10 +138,12 @@ async function calculate() {
   $('#calculate').disabled = true; $('#calculate').textContent = 'Calculating…';
   $('#calculation-status').textContent = 'Calculating your repayment estimate…';
   try {
+    const signal = AbortSignal.any([pending.signal, AbortSignal.timeout(20000)]);
     const response = await fetch('/api/v1/simulations/repayment', { method: 'POST', credentials: 'omit',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(snapshot.body),
-      signal: AbortSignal.any([pending.signal, AbortSignal.timeout(20000)]) });
+      signal });
     const data = await response.json().catch(() => null);
+    signal.throwIfAborted();
     if (requestGeneration !== generation) return;
     if (!response.ok) throw new Error(response.status === 429 ? 'Too many calculations. Please wait a minute, then try again.'
       : response.status >= 500 ? 'The calculator is temporarily unavailable. Please try again shortly.'
@@ -152,7 +154,9 @@ async function calculate() {
     renderResult(snapshot, data, validated);
   } catch (error) {
     if (requestGeneration !== generation) return;
-    const message = ['TimeoutError', 'AbortError', 'TypeError'].includes(error.name)
+    const message = error.name === 'TimeoutError'
+      ? 'The calculator took too long to respond. Please try again.'
+      : ['AbortError', 'TypeError'].includes(error.name)
       ? 'We couldn’t reach the calculator. Check your connection and try again.' : error.message;
     $('#simulation-error').textContent = message; $('#simulation-error').hidden = false;
     clearResult('Estimate unavailable', 'No estimate has been generated. Your inputs are still here so you can retry.');

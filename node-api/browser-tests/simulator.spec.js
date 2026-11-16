@@ -268,3 +268,48 @@ test('a single-payment headline uses the actual debit and resets on a new monthl
   await expect(page.locator('#monthly-payment')).toHaveText('$100.00');
   await expect(page.locator('#calculation-status')).toContainText('$100.00 per month;');
 });
+
+for (const phase of ['request', 'response body']) {
+  test(`a timeout during the ${phase} preserves inputs and allows a clean retry`, async ({ page }) => {
+    await mockCalculator(page);
+    await page.goto(baseURL);
+    await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+    await page.getByLabel('Schedule view').selectOption('annual');
+    await page.evaluate(phase => {
+      const originalFetch = window.fetch;
+      const originalTimeout = AbortSignal.timeout;
+      const timeout = new AbortController();
+      AbortSignal.timeout = () => timeout.signal;
+      window.expireCalculation = () => timeout.abort(new DOMException('Timed out', 'TimeoutError'));
+      window.restoreCalculator = () => {
+        window.fetch = originalFetch;
+        AbortSignal.timeout = originalTimeout;
+      };
+      window.fetch = async (url, options) => {
+        const interrupted = () => new Promise((resolve, reject) => {
+          options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+          window.calculationWaiting = true;
+        });
+        if (phase === 'request') return interrupted();
+        return { ok: true, json: interrupted };
+      };
+    }, phase);
+    await fillScenario(page);
+    await expect.poll(() => page.evaluate(() => window.calculationWaiting)).toBe(true);
+    await expect(page.locator('#calculate')).toBeDisabled();
+    await page.evaluate(() => window.expireCalculation());
+    await expect(page.locator('#simulation-error')).toHaveText('The calculator took too long to respond. Please try again.');
+    await expect(page.locator('#result-content')).toBeHidden();
+    await expect(page.locator('#repayment-schedule')).toBeHidden();
+    await expect(page.locator('#calculate')).toBeEnabled();
+    await expect(page.locator('#simulation-results')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#sim-principal')).toHaveValue('1200');
+    await expect(page.locator('#sim-rate')).toHaveValue('0');
+    await expect(page.locator('#sim-term')).toHaveValue('12');
+    await page.evaluate(() => window.restoreCalculator());
+    await page.getByRole('button', { name: 'Calculate repayments' }).click();
+    await expect(page.locator('#simulation-error')).toBeHidden();
+    await expect(page.locator('#monthly-payment')).toHaveText('$100.00');
+    await expect(page.locator('#schedule-page')).toHaveText('Years 1–1 of 1');
+  });
+}

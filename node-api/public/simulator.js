@@ -101,6 +101,8 @@ function renderSchedule() {
   }
   $('#schedule-rows').replaceChildren(fragment);
   $('#schedule-page').textContent = (yearly ? 'Years ' : 'Payments ') + (start + 1) + '–' + (start + rows.length) + ' of ' + schedule.length;
+  $('#first-schedule').disabled = page === 0;
+  $('#last-schedule').disabled = start + rows.length >= schedule.length;
   $('#previous-schedule').disabled = page === 0;
   $('#next-schedule').disabled = start + rows.length >= schedule.length;
 }
@@ -167,6 +169,12 @@ async function calculate() {
 form.addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('#reset-example').addEventListener('click', () => { form.reset(); invalidate(); calculate(); });
 $('#schedule-view').addEventListener('change', () => { if (current) { page = 0; renderSchedule(); } });
+$('#first-schedule').addEventListener('click', () => { if (current) { page = 0; renderSchedule(); } });
+$('#last-schedule').addEventListener('click', () => {
+  if (!current) return;
+  const schedule = $('#schedule-view').value === 'annual' ? current.annual : current.data.schedule;
+  page = Math.ceil(schedule.length / pageSize) - 1; renderSchedule();
+});
 $('#previous-schedule').addEventListener('click', () => { if (current && page > 0) { page--; renderSchedule(); } });
 $('#next-schedule').addEventListener('click', () => { if (current && (page + 1) * pageSize < ($('#schedule-view').value === 'annual' ? current.annual.length : current.data.schedule.length)) { page++; renderSchedule(); } });
 $('#download-schedule').addEventListener('click', () => {

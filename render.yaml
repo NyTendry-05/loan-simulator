@@ -1,0 +1,65 @@
+# Temporary free portfolio demo; database expires 30 days after creation.
+# Review workspace billing limits before applying; free tiers share usage allowances.
+services:
+  - type: web
+    name: nyt-loan-api
+    runtime: docker
+    region: oregon
+    plan: free
+    healthCheckPath: /health
+    dockerfilePath: ./deploy/render/Dockerfile
+    autoDeployTrigger: "off"
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: SERVER_ADDRESS
+        value: 0.0.0.0
+      - key: SPRING_PROFILES_ACTIVE
+        value: local
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "5"
+      - key: DATABASE_INTERNAL_URL
+        fromDatabase:
+          name: nyt-loan-db
+          property: connectionString
+      - key: DATABASE_USER
+        fromDatabase:
+          name: nyt-loan-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: nyt-loan-db
+          property: password
+      - key: ENCRYPTION_PRIMARY_KEY
+        generateValue: true
+      - key: AUTH_LOOKUP_KEY
+        generateValue: true
+  - type: web
+    name: nyt-loan-web
+    runtime: node
+    region: oregon
+    plan: free
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --prefix node-api --omit=dev
+    startCommand: sh deploy/render/start-web.sh
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: UPSTREAM_TIMEOUT_MS
+        value: "120000"
+      - key: HOST
+        value: 0.0.0.0
+      - key: LOAN_SERVICE_URL
+        fromService:
+          name: nyt-loan-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+databases:
+  - name: nyt-loan-db
+    region: oregon
+    plan: free
+    ipAllowList: []

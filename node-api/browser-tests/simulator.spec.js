@@ -313,3 +313,46 @@ for (const phase of ['request', 'response body']) {
     await expect(page.locator('#schedule-page')).toHaveText('Years 1–1 of 1');
   });
 }
+
+for (const width of [1440, 320]) {
+  test(`first and last schedule pages handle long loans, view changes and early payoff at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await mockCalculator(page); await page.goto(baseURL);
+    await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+    await fillScenario(page, { amount: '1200', term: '1200' });
+    const first = page.getByRole('button', { name: 'First schedule page' });
+    const last = page.getByRole('button', { name: 'Last schedule page' });
+    await expect(first).toBeDisabled();
+    await expect(last).toBeEnabled();
+    await last.click();
+    await expect(page.locator('#schedule-page')).toHaveText('Payments 1189–1200 of 1200');
+    await expect(page.locator('#schedule-rows tr').last()).toHaveText('1200$1.00$1.00$0.00$0.00');
+    await expect(last).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Next 12 payments' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Previous 12 payments' }).click();
+    await expect(last).toBeEnabled();
+    await first.click();
+    await expect(page.locator('#schedule-page')).toHaveText('Payments 1–12 of 1200');
+    await expect(first).toBeDisabled();
+    await page.getByLabel('Schedule view').selectOption('annual');
+    await last.click();
+    await expect(page.locator('#schedule-page')).toHaveText('Years 97–100 of 100');
+    await expect(page.locator('#schedule-rows tr')).toHaveCount(4);
+    await expect(last).toBeDisabled();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.getByLabel('Schedule view').selectOption('monthly');
+    await expect(first).toBeDisabled();
+    await expect(last).toBeEnabled();
+    await fillScenario(page, { amount: '2500', term: '25' });
+    await last.click();
+    await expect(page.locator('#schedule-page')).toHaveText('Payments 25–25 of 25');
+    await expect(page.locator('#schedule-rows tr')).toHaveCount(1);
+    await fillScenario(page, { amount: '2', term: '1200', currency: 'JPY' });
+    await expect(page.locator('#schedule-page')).toHaveText('Payments 1–2 of 2');
+    await expect(first).toBeDisabled();
+    await expect(last).toBeDisabled();
+    await page.getByLabel('Schedule view').selectOption('annual');
+    await expect(first).toBeDisabled();
+    await expect(last).toBeDisabled();
+  });
+}

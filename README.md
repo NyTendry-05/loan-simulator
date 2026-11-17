@@ -271,6 +271,9 @@ a calendar or tax year. The final year can be shorter, including early payoff.
 Payment, principal and interest totals are summed exactly from the service ledger;
 each balance is the balance after that year’s last payment.
 
+**First** and **Last** jump to the beginning or end of the selected schedule view.
+The controls are disabled when already on that page, including short or early-paid loans.
+
 **Download CSV** exports the selected view. Annual CSV includes the first and last
 payment month for every loan year. Monthly CSV keeps its existing format.
 See `docs/ANNUAL-SUMMARY.md` for scope and verification commands.

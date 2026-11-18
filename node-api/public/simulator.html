@@ -31,6 +31,7 @@
           <div class="sim-field-row"><label for="sim-rate"><span id="rate-label">Annual interest rate</span><span class="input-unit"><input id="sim-rate" aria-labelledby="rate-label" name="annualInterestRate" type="number" inputmode="decimal" min="0" max="100" step="0.000001" value="7.5" required aria-describedby="rate-error"><span aria-hidden="true">%</span></span><span class="field-error" id="rate-error" hidden></span></label><label for="sim-term"><span id="term-label">Repayment term</span><span class="input-unit"><input id="sim-term" aria-labelledby="term-label" name="termMonths" type="number" inputmode="numeric" min="1" max="1200" step="1" value="60" required aria-describedby="term-help term-error"><span aria-hidden="true">months</span></span><span class="help" id="term-help">5 years</span><span class="field-error" id="term-error" hidden></span></label></div>
           <p class="form-error" id="simulation-error" role="alert" hidden></p>
           <button class="button primary wide calculate-button" id="calculate" type="submit">Calculate repayments <span aria-hidden="true">→</span></button>
+          <button class="text-button" id="cancel-calculation" type="button" hidden>Cancel calculation</button>
           <button class="text-button reset-example" id="reset-example" type="button">Reset example</button>
         </form>
         <p class="calculator-footnote">Fixed interest · Monthly instalments · No fees<br>Calculator bounds are technical limits, not lending criteria.</p>

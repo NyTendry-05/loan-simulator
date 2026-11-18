@@ -98,7 +98,7 @@ test('validates all inputs and preserves values through service error and retry'
   await expect(page.locator('#sim-term')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#sim-principal')).toBeFocused();
   await expect(page.locator('#simulation-error')).toContainText('Check the highlighted fields');
-  await page.unroute(endpoint); await page.route(endpoint, route => route.fulfill({ status: 503, json: { detail: 'private upstream info' } }));
+  await page.unroute(endpoint); await page.route(endpoint, route => route.fulfill({ status: 500, json: { detail: 'private upstream info' } }));
   await fillScenario(page);
   await expect(page.locator('#simulation-error')).toContainText('temporarily unavailable');
   await expect(page.locator('#sim-principal')).toHaveValue('1200');
@@ -354,5 +354,56 @@ for (const width of [1440, 320]) {
     await page.getByLabel('Schedule view').selectOption('annual');
     await expect(first).toBeDisabled();
     await expect(last).toBeDisabled();
+  });
+}
+
+test('a sleeping demo retries HTML 502 responses and renders the original scenario', async ({ page }) => {
+  await page.clock.install();
+  let calls = 0;
+  await page.route(endpoint, route => {
+    calls++;
+    return calls === 1 ? route.fulfill({ status: 502, contentType: 'text/html', body: '<html>upstream private error</html>' })
+      : route.fulfill({ status: 200, json: result(route.request().postDataJSON()) });
+  });
+  await page.goto(baseURL);
+  await expect(page.locator('#calculation-status')).toContainText('may be waking from sleep');
+  await expect(page.locator('#simulation-error')).toBeHidden();
+  await expect(page.locator('#calculate')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Cancel calculation' })).toBeVisible();
+  await page.clock.runFor(10000);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await expect(page.locator('#calculate')).toBeEnabled();
+  await expect(page.locator('#cancel-calculation')).toBeHidden();
+  await page.clock.runFor(60000);
+  expect(calls).toBe(2);
+});
+
+for (const interruption of ['cancel', 'edit', 'leave page']) {
+  test(`${interruption} stops a pending cold-start retry and permits a fresh estimate`, async ({ page }) => {
+    await page.clock.install();
+    let calls = 0;
+    await page.route(endpoint, route => { calls++; return route.fulfill({ status: 503, body: 'unavailable' }); });
+    await page.goto(baseURL);
+    await expect(page.locator('#calculation-status')).toContainText('may be waking from sleep');
+    if (interruption === 'cancel') await page.getByRole('button', { name: 'Cancel calculation' }).click();
+    else if (interruption === 'edit') await page.getByLabel('Loan amount', { exact: true }).fill('1200');
+    else {
+      // BFCache preserves the document: model its leave/restore lifecycle without rerunning the module.
+      await page.evaluate(() => {
+        window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+        window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+      });
+      await expect(page.locator('#result-state')).toHaveText('Calculation interrupted');
+      await expect(page.locator('#calculation-status')).toContainText('stopped when you left');
+    }
+    await expect(page.locator('#calculate')).toBeEnabled();
+    await expect(page.locator('#simulation-results')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#cancel-calculation')).toBeHidden();
+    await page.clock.runFor(30000);
+    expect(calls).toBe(1);
+    await page.unroute(endpoint); await mockCalculator(page);
+    await fillScenario(page);
+    await expect(page.locator('#monthly-payment')).toHaveText('$100.00');
+    await expect(page.locator('#simulation-error')).toBeHidden();
   });
 }

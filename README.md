@@ -32,6 +32,8 @@ The Maven version output must show Java 21. The launcher creates local database 
 
 Open **http://127.0.0.1:3000** for the public repayment calculator, or **http://127.0.0.1:3000/portal** for the demonstration account portal. Use the configured origin exactly so browser session and origin checks agree.
 
+On free demo hosting, the calculator service may sleep between visits. The public calculator retries startup responses (502, 503, and 504) every 10 seconds, with a maximum of 18 attempts and a three-minute overall timeout. A waiting message explains the delay. **Cancel calculation**, editing an input, or leaving the page stops pending retries; inputs remain available for a fresh calculation. Individual requests still time out after 20 seconds. Validation errors, rate limits, offline failures, and other server errors are not retried. This is only for the stateless repayment estimate, not portal actions, and makes no background keep-alive requests after completion or cancellation.
+
 Sign in with the administrator account created during setup, configure loan products, and add officer accounts through **Team access**. Customers register from the sign-in page. Initial setup does not seed loan products or lending rates.
 
 ## Start, stop, and restart

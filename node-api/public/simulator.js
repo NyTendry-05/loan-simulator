@@ -1,3 +1,4 @@
+import { requestEstimate } from './calculator-request.js';
 import { formatMoney, reconcileRepaymentResult, scheduleToCsv } from './calculator-utils.js';
 
 const $ = selector => document.querySelector(selector);
@@ -28,6 +29,7 @@ function clearErrors() {
   for (const { input, error } of fields) { input.removeAttribute('aria-invalid'); error.hidden = true; }
 }
 function idle() {
+  $('#cancel-calculation').hidden = true;
   $('#calculate').disabled = false;
   $('#calculate').innerHTML = 'Calculate repayments <span aria-hidden="true">→</span>';
   $('#simulation-results').setAttribute('aria-busy', 'false');
@@ -135,17 +137,21 @@ async function calculate() {
   pending?.abort(); clearErrors();
   const snapshot = validate(); if (!snapshot) return;
   pending = new AbortController();
+  $('#cancel-calculation').hidden = false;
   clearResult('Calculating…');
   $('#simulation-results').setAttribute('aria-busy', 'true');
   $('#calculate').disabled = true; $('#calculate').textContent = 'Calculating…';
   $('#calculation-status').textContent = 'Calculating your repayment estimate…';
   try {
-    const signal = AbortSignal.any([pending.signal, AbortSignal.timeout(20000)]);
-    const response = await fetch('/api/v1/simulations/repayment', { method: 'POST', credentials: 'omit',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(snapshot.body),
-      signal });
-    const data = await response.json().catch(() => null);
-    signal.throwIfAborted();
+    const { response, data } = await requestEstimate(snapshot.body, {
+      signal: pending.signal,
+      onRetry: () => {
+        if (requestGeneration !== generation) return;
+        $('#result-state').textContent = 'Waiting for calculator…';
+        $('#calculate').textContent = 'Waiting for calculator…';
+        $('#calculation-status').textContent = 'The demo calculator may be waking from sleep. Retrying automatically for up to 3 minutes. You can cancel or edit your inputs.';
+      },
+    });
     if (requestGeneration !== generation) return;
     if (!response.ok) throw new Error(response.status === 429 ? 'Too many calculations. Please wait a minute, then try again.'
       : response.status >= 500 ? 'The calculator is temporarily unavailable. Please try again shortly.'
@@ -166,6 +172,15 @@ async function calculate() {
     if (requestGeneration === generation) { pending = null; idle(); }
   }
 }
+$('#cancel-calculation').addEventListener('click', () => {
+  invalidate();
+  clearResult('Calculation cancelled', 'Your inputs are still here. Calculate again when you’re ready.');
+});
+window.addEventListener('pagehide', () => {
+  if (!pending) return;
+  generation++; pending.abort(); pending = null; idle();
+  clearResult('Calculation interrupted', 'Calculation stopped when you left this page. Your inputs are still here so you can calculate again.');
+});
 form.addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('#reset-example').addEventListener('click', () => { form.reset(); invalidate(); calculate(); });
 $('#schedule-view').addEventListener('change', () => { if (current) { page = 0; renderSchedule(); } });

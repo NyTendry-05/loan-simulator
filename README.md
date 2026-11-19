@@ -32,7 +32,9 @@ The Maven version output must show Java 21. The launcher creates local database 
 
 Open **http://127.0.0.1:3000** for the public repayment calculator, or **http://127.0.0.1:3000/portal** for the demonstration account portal. Use the configured origin exactly so browser session and origin checks agree.
 
-On free demo hosting, the calculator service may sleep between visits. The public calculator retries startup responses (502, 503, and 504) every 10 seconds, with a maximum of 18 attempts and a three-minute overall timeout. A waiting message explains the delay. **Cancel calculation**, editing an input, or leaving the page stops pending retries; inputs remain available for a fresh calculation. Individual requests still time out after 20 seconds. Validation errors, rate limits, offline failures, and other server errors are not retried. This is only for the stateless repayment estimate, not portal actions, and makes no background keep-alive requests after completion or cancellation.
+On free demo hosting, the calculator service may sleep between visits. In repository versions that include [PR #8](https://github.com/NyTendry-05/loan-simulator/pull/8), the public calculator retries startup responses (502, 503, and 504) every 10 seconds, with a maximum of 18 attempts and a three-minute overall timeout. A waiting message explains the delay. **Cancel calculation**, editing an input, or leaving the page stops pending retries; inputs remain available for a fresh calculation. Individual requests still time out after 20 seconds. Validation errors, rate limits, offline failures, and other server errors are not retried. This is only for the stateless repayment estimate, not portal actions, and makes no background keep-alive requests after completion or cancellation.
+
+**Repository code is not the live deployment.** The supplied [Render Blueprint](render.yaml) disables automatic deployment for both services. Merging into `main` does not update the hosted demo: it continues running its last successful manual deployment. A deployment at the PR #7 commit (`528c96d`) does not include the PR #8 retry behavior or Cancel calculation control. Those changes require a separate manual deployment of a revision containing PR #8. Check each service’s deployed commit in the Render dashboard before describing a feature as live; a successful merge or CI run is not deployment confirmation.
 
 Sign in with the administrator account created during setup, configure loan products, and add officer accounts through **Team access**. Customers register from the sign-in page. Initial setup does not seed loan products or lending rates.
 
@@ -285,5 +287,5 @@ rate, term, currency precision and totals agree with the request and exact month
 ledger. Inconsistent responses leave your inputs available for a fresh calculation.
 See `docs/REPAYMENT-CONSISTENCY.md` for the validation scope.
 
-Scenario comparisons, deployment configuration and later portal reliability changes
-remain separate future increments.
+The free-demo deployment configuration is provided in [render.yaml](render.yaml).
+Scenario comparisons and later portal reliability changes remain separate future increments.

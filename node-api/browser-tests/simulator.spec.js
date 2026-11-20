@@ -236,7 +236,7 @@ test('mismatched response summaries are hidden, preserve inputs and allow a clea
     await expect(page.locator('#repayment-schedule')).toBeHidden();
     await expect(page.locator('#sim-principal')).toHaveValue('1200');
     await expect(page.locator('#calculate')).toBeEnabled();
-    await expect(page.locator('#simulation-results')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'false');
   }
   await page.unroute(endpoint); await mockCalculator(page);
   await page.getByRole('button', { name: 'Calculate repayments' }).click();
@@ -302,7 +302,7 @@ for (const phase of ['request', 'response body']) {
     await expect(page.locator('#result-content')).toBeHidden();
     await expect(page.locator('#repayment-schedule')).toBeHidden();
     await expect(page.locator('#calculate')).toBeEnabled();
-    await expect(page.locator('#simulation-results')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'false');
     await expect(page.locator('#sim-principal')).toHaveValue('1200');
     await expect(page.locator('#sim-rate')).toHaveValue('0');
     await expect(page.locator('#sim-term')).toHaveValue('12');
@@ -397,7 +397,7 @@ for (const interruption of ['cancel', 'edit', 'leave page']) {
       await expect(page.locator('#calculation-status')).toContainText('stopped when you left');
     }
     await expect(page.locator('#calculate')).toBeEnabled();
-    await expect(page.locator('#simulation-results')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'false');
     await expect(page.locator('#cancel-calculation')).toBeHidden();
     await page.clock.runFor(30000);
     expect(calls).toBe(1);
@@ -407,3 +407,88 @@ for (const interruption of ['cancel', 'edit', 'leave page']) {
     await expect(page.locator('#simulation-error')).toBeHidden();
   });
 }
+
+for (const outcome of ['cancel', 'success', 'error']) {
+  test(`progress stays outside busy content and ${outcome} restores focus from Cancel`, async ({ page }) => {
+    let release;
+    const pendingResponse = new Promise(resolve => { release = resolve; });
+    await page.route(endpoint, async route => {
+      await pendingResponse;
+      await route.fulfill(outcome === 'error' ? { status: 500, json: {} }
+        : { status: 200, json: result(route.request().postDataJSON()) }).catch(() => {});
+    });
+    await page.goto(baseURL);
+    await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('#calculation-status')).toContainText('Calculating your repayment estimate');
+    expect(await page.locator('#calculation-status').evaluate(node => {
+      window.originalCalculationStatus = node;
+      return node.closest('[aria-busy="true"]') === null && node.getAttribute('role') === 'status';
+    })).toBe(true);
+    const cancel = page.getByRole('button', { name: 'Cancel calculation' });
+    await cancel.focus();
+    await expect(cancel).toBeFocused();
+    if (outcome === 'cancel') await page.keyboard.press('Enter');
+    release();
+    await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#calculate')).toBeFocused();
+    await expect(cancel).toBeHidden();
+    expect(await page.locator('#calculation-status').evaluate(node => node === window.originalCalculationStatus)).toBe(true);
+    if (outcome === 'success') await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+    else if (outcome === 'error') await expect(page.locator('#simulation-error')).toContainText('temporarily unavailable');
+    else await expect(page.locator('#result-state')).toHaveText('Calculation cancelled');
+  });
+}
+
+test('cold-start progress is mounted outside busy content and editing keeps input focus', async ({ page }) => {
+  await page.clock.install();
+  let calls = 0;
+  await page.route(endpoint, route => { calls++; return route.fulfill({ status: 502, body: 'unavailable' }); });
+  await page.goto(baseURL);
+  const status = page.locator('#calculation-status');
+  await expect(status).toContainText('may be waking from sleep');
+  await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'true');
+  expect(await status.evaluate(node => node.closest('[aria-busy="true"]') === null)).toBe(true);
+  const amount = page.getByLabel('Loan amount', { exact: true });
+  await amount.fill('1200');
+  await expect(amount).toBeFocused();
+  await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('#cancel-calculation')).toBeHidden();
+  await page.clock.runFor(30000);
+  expect(calls).toBe(1);
+  await expect(amount).toBeFocused();
+});
+
+test('completion does not steal focus from another control', async ({ page }) => {
+  let release;
+  const pendingResponse = new Promise(resolve => { release = resolve; });
+  await page.route(endpoint, async route => {
+    await pendingResponse;
+    await route.fulfill({ status: 200, json: result(route.request().postDataJSON()) });
+  });
+  await page.goto(baseURL);
+  const amount = page.getByLabel('Loan amount', { exact: true });
+  await amount.focus();
+  release();
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await expect(amount).toBeFocused();
+  await expect(page.locator('#estimate-region')).toHaveAttribute('aria-busy', 'false');
+});
+
+test('the empty progress region is exposed before the calculator module starts', async ({ page }) => {
+  let release;
+  const moduleReady = new Promise(resolve => { release = resolve; });
+  await page.route('**/simulator.js', async route => { await moduleReady; await route.continue(); });
+  await mockCalculator(page);
+  await page.goto(baseURL, { waitUntil: 'commit' });
+  const status = page.locator('#calculation-status');
+  await expect(status).toBeAttached();
+  await expect(status).toHaveText('');
+  await expect(status).toHaveCSS('display', 'block');
+  await expect(status).toHaveCSS('margin-top', '0px');
+  await expect(status).toHaveCSS('margin-bottom', '0px');
+  await expect(status).toHaveAttribute('role', 'status');
+  await expect(status).toHaveAttribute('aria-live', 'polite');
+  expect(await status.evaluate(node => node.closest('[aria-busy="true"]') === null)).toBe(true);
+  release();
+  await expect(status).toContainText('Estimate ready');
+});

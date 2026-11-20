@@ -29,10 +29,12 @@ function clearErrors() {
   for (const { input, error } of fields) { input.removeAttribute('aria-invalid'); error.hidden = true; }
 }
 function idle() {
+  const restoreFocus = document.activeElement === $('#cancel-calculation');
   $('#cancel-calculation').hidden = true;
   $('#calculate').disabled = false;
   $('#calculate').innerHTML = 'Calculate repayments <span aria-hidden="true">→</span>';
-  $('#simulation-results').setAttribute('aria-busy', 'false');
+  $('#estimate-region').setAttribute('aria-busy', 'false');
+  if (restoreFocus) $('#calculate').focus();
 }
 function clearResult(label, message = '') {
   current = null; page = 0;
@@ -139,7 +141,7 @@ async function calculate() {
   pending = new AbortController();
   $('#cancel-calculation').hidden = false;
   clearResult('Calculating…');
-  $('#simulation-results').setAttribute('aria-busy', 'true');
+  $('#estimate-region').setAttribute('aria-busy', 'true');
   $('#calculate').disabled = true; $('#calculate').textContent = 'Calculating…';
   $('#calculation-status').textContent = 'Calculating your repayment estimate…';
   try {

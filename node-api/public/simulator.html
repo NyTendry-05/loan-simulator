@@ -36,15 +36,17 @@
         </form>
         <p class="calculator-footnote">Fixed interest · Monthly instalments · No fees<br>Calculator bounds are technical limits, not lending criteria.</p>
       </div>
-      <div class="calculator-results" id="simulation-results" aria-busy="false">
-        <div class="estimate-heading"><div class="section-kicker"><span>02</span> YOUR ESTIMATE</div><span id="result-state" class="result-state">Illustrative example</span></div>
-        <div id="result-placeholder" class="result-placeholder"><div class="placeholder-symbol" aria-hidden="true">↗</div><h2>Your next step, in numbers.</h2><p>Calculate your scenario to see the monthly payment, total cost, and repayment schedule.</p></div>
-        <div id="result-content" hidden>
-          <div class="monthly-estimate"><h2 id="payment-heading">Estimated monthly payment</h2><p class="monthly-amount" id="monthly-payment"></p><p id="estimate-context" class="estimate-context"></p></div>
-          <div class="cost-summary"><div><span>Total repayment</span><strong id="total-repayment"></strong></div><div><span>Total interest</span><strong id="total-interest"></strong></div></div>
-          <div class="cost-breakdown"><div class="breakdown-title"><h3>Where your repayments go</h3><span id="interest-share"></span></div><meter id="principal-meter" min="0" max="100" value="0" aria-label="Principal as a percentage of total repayment"></meter><div class="breakdown-legend"><span><i class="principal-dot" aria-hidden="true"></i>Principal <strong id="principal-total"></strong></span><span><i class="interest-dot" aria-hidden="true"></i>Interest <strong id="interest-total"></strong></span></div></div>
-          <p id="final-payment-note" class="final-payment-note"></p>
-          <a class="schedule-link" href="#repayment-schedule">See the repayment schedule <span aria-hidden="true">↓</span></a>
+      <div class="calculator-results" id="simulation-results">
+        <div id="estimate-region" class="estimate-region" aria-busy="false">
+          <div class="estimate-heading"><div class="section-kicker"><span>02</span> YOUR ESTIMATE</div><span id="result-state" class="result-state">Illustrative example</span></div>
+          <div id="result-placeholder" class="result-placeholder"><div class="placeholder-symbol" aria-hidden="true">↗</div><h2>Your next step, in numbers.</h2><p>Calculate your scenario to see the monthly payment, total cost, and repayment schedule.</p></div>
+          <div id="result-content" hidden>
+            <div class="monthly-estimate"><h2 id="payment-heading">Estimated monthly payment</h2><p class="monthly-amount" id="monthly-payment"></p><p id="estimate-context" class="estimate-context"></p></div>
+            <div class="cost-summary"><div><span>Total repayment</span><strong id="total-repayment"></strong></div><div><span>Total interest</span><strong id="total-interest"></strong></div></div>
+            <div class="cost-breakdown"><div class="breakdown-title"><h3>Where your repayments go</h3><span id="interest-share"></span></div><meter id="principal-meter" min="0" max="100" value="0" aria-label="Principal as a percentage of total repayment"></meter><div class="breakdown-legend"><span><i class="principal-dot" aria-hidden="true"></i>Principal <strong id="principal-total"></strong></span><span><i class="interest-dot" aria-hidden="true"></i>Interest <strong id="interest-total"></strong></span></div></div>
+            <p id="final-payment-note" class="final-payment-note"></p>
+            <a class="schedule-link" href="#repayment-schedule">See the repayment schedule <span aria-hidden="true">↓</span></a>
+          </div>
         </div>
         <p id="calculation-status" class="calculation-status" role="status" aria-live="polite"></p>
         <p class="estimate-footnote">The same inputs always produce the same calculation. This simulator does not assess eligibility or make credit decisions.</p>

@@ -67,6 +67,7 @@ input[aria-invalid=true] { border-color:#a52f32; }
 .principal-dot { background:#9cb9d4; }.interest-dot { background:#c5ac84; }
 .breakdown-legend strong { display:block; font-weight:400; color:white; margin:5px 0 0 12px; font-size:13px; font-variant-numeric:tabular-nums; }
 .final-payment-note { font-size:11px; color:#c1cede; margin:27px 0 5px; }
+.copy-estimate { margin-top:12px; }
 .schedule-link { display:flex; align-items:center; justify-content:space-between; border-top:1px solid #ffffff30; padding:17px 0 0; margin-top:24px; color:#fff; font-size:12px; }
 .calculation-status { color:#e0cfad; font-size:11px; margin:15px 0 0; }
 .calculation-status:empty { margin:0; }

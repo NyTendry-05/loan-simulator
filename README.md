@@ -257,6 +257,9 @@ The public home page accepts only loan amount, annual fixed rate, term and displ
 It generates a monthly amortization schedule and CSV without requiring an account or
 storing an application. Calculations are illustrative, exclude fees, and are not loan
 offers or eligibility decisions. The portal is at `/portal`; use fictional details only.
+After a successful calculation, **Copy estimate** copies a plain-text scenario and
+repayment summary with explicit currency codes. Nothing is stored or shared by the
+calculator when copying. The full repayment schedule remains available as CSV.
 
 `POST /api/v1/simulations/repayment` accepts JSON fields `principal`,
 `annualInterestRate`, `termMonths` and `currencyScale`. Requests are rate limited and

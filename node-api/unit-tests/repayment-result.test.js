@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reconcileRepaymentResult, summarizeSchedule, scheduleToCsv } from '../public/calculator-utils.js';
+import { estimateToText, reconcileRepaymentResult, summarizeSchedule, scheduleToCsv } from '../public/calculator-utils.js';
 
 function scenario() {
   const request = { principal: '100', annualInterestRate: '12', termMonths: 2, currencyScale: 2 };
@@ -156,4 +156,25 @@ test('reconciles all 1,200 installments and the full 100-year summary', () => {
   assert.equal(validated.annual.at(-1).balance, '0');
   assert.equal(validated.headline.amount, '1');
   assert.equal(validated.headline.single, false);
+});
+
+
+test('copyable estimate records exact scenario and validated rounded final payment', () => {
+  const { request, data } = scenario();
+  const { headline } = reconcileRepaymentResult(data, request);
+  assert.equal(estimateToText({ currency: 'CAD', body: request, data, headline }), [
+    'Loan repayment estimate', 'Loan amount: CAD 100.00', 'Fixed annual interest rate: 12%',
+    'Requested term (months): 2', 'Scheduled payments: 2', 'Regular monthly payment: CAD 50.76',
+    'Final payment: CAD 50.74', 'Total repayment: CAD 101.50', 'Total interest: CAD 1.50',
+    'Illustrative estimate only. Fees, insurance, and taxes excluded. Not a loan offer.',
+  ].join('\n'));
+});
+
+test('copyable estimate labels a rounding-driven one-payment payoff without duplicate payment lines', () => {
+  const body = { principal: '1', annualInterestRate: '0.000001', termMonths: 1200, currencyScale: 0 };
+  const data = { principal: '1', repaymentMonths: 1, finalPayment: '1', totalRepayment: '1', totalInterest: '0' };
+  const summary = estimateToText({ currency: 'JPY', body, data, headline: { single: true, amount: '1' } });
+  assert.match(summary, /0\.000001%/);
+  assert.match(summary, /Requested term \(months\): 1200\nScheduled payments: 1\nSingle payment: JPY 1/);
+  assert.doesNotMatch(summary, /Regular monthly payment|Final payment/);
 });

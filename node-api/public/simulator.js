@@ -1,5 +1,5 @@
 import { requestEstimate } from './calculator-request.js';
-import { formatMoney, reconcileRepaymentResult, scheduleToCsv } from './calculator-utils.js';
+import { estimateToText, formatMoney, reconcileRepaymentResult, scheduleToCsv } from './calculator-utils.js';
 
 const $ = selector => document.querySelector(selector);
 const form = $('#simulation-form');
@@ -112,7 +112,7 @@ function renderSchedule() {
 }
 function renderResult(snapshot, data, validated) {
   const { annual, headline } = validated;
-  current = { ...snapshot, data, annual }; page = 0;
+  current = { ...snapshot, data, annual, headline }; page = 0;
   $('#payment-heading').textContent = headline.single ? 'Estimated single payment' : 'Estimated monthly payment';
   $('#monthly-payment').textContent = money(headline.amount);
   $('#total-repayment').textContent = money(data.totalRepayment);
@@ -194,6 +194,20 @@ $('#last-schedule').addEventListener('click', () => {
 });
 $('#previous-schedule').addEventListener('click', () => { if (current && page > 0) { page--; renderSchedule(); } });
 $('#next-schedule').addEventListener('click', () => { if (current && (page + 1) * pageSize < ($('#schedule-view').value === 'annual' ? current.annual.length : current.data.schedule.length)) { page++; renderSchedule(); } });
+let copyingEstimate = false;
+$('#copy-estimate').addEventListener('click', async () => {
+  if (!current || copyingEstimate) return;
+  const estimate = current;
+  copyingEstimate = true;
+  try {
+    await navigator.clipboard.writeText(estimateToText(estimate));
+    if (current === estimate) $('#calculation-status').textContent = 'Estimate copied.';
+  } catch {
+    if (current === estimate) $('#calculation-status').textContent = 'Could not copy the estimate. You can still select the values or download the schedule as CSV.';
+  } finally {
+    copyingEstimate = false;
+  }
+});
 $('#download-schedule').addEventListener('click', () => {
   if (!current) return;
   const frequency = $('#schedule-view').value;

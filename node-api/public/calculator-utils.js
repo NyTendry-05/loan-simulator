@@ -100,3 +100,20 @@ export function scheduleToCsv(schedule, currency, scale, frequency = 'monthly') 
     row.payment, row.principal, row.interest, row.balance])];
   return rows.map(row => row.join(',')).join('\r\n') + '\r\n';
 }
+
+// The caller supplies a reconciled estimate and its original input snapshot.
+export function estimateToText({ currency, body, data, headline }) {
+  const amount = value => currency + ' ' + value;
+  return [
+    'Loan repayment estimate',
+    'Loan amount: ' + amount(data.principal),
+    'Fixed annual interest rate: ' + body.annualInterestRate + '%',
+    'Requested term (months): ' + body.termMonths,
+    'Scheduled payments: ' + data.repaymentMonths,
+    (headline.single ? 'Single payment: ' : 'Regular monthly payment: ') + amount(headline.amount),
+    ...(headline.single ? [] : ['Final payment: ' + amount(data.finalPayment)]),
+    'Total repayment: ' + amount(data.totalRepayment),
+    'Total interest: ' + amount(data.totalInterest),
+    'Illustrative estimate only. Fees, insurance, and taxes excluded. Not a loan offer.',
+  ].join('\n');
+}

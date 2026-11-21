@@ -492,3 +492,62 @@ test('the empty progress region is exposed before the calculator module starts',
   release();
   await expect(status).toContainText('Estimate ready');
 });
+
+test('copies a validated estimate with original scenario and exact currency amounts', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.clipboardWrites = [];
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: async text => { window.clipboardWrites.push(text); },
+    } });
+  });
+  await mockCalculator(page);
+  await page.goto(baseURL);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await fillScenario(page, { amount: '1200', currency: 'EUR' });
+  await expect(page.locator('#monthly-payment')).toHaveText('€100.00');
+  const control = page.getByRole('button', { name: 'Copy estimate' });
+  await control.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#calculation-status')).toHaveText('Estimate copied.');
+  await expect(control).toBeFocused();
+  const writes = await page.evaluate(() => window.clipboardWrites);
+  expect(writes).toHaveLength(1);
+  expect(writes[0]).toContain('Loan amount: EUR 1200.00\nFixed annual interest rate: 0%\nRequested term (months): 12');
+  expect(writes[0]).toContain('Regular monthly payment: EUR 100.00');
+  expect(writes[0]).toContain('Total interest: EUR 0.00');
+  expect(writes[0]).toContain('Not a loan offer.');
+  await page.getByLabel('Loan amount', { exact: true }).fill('1234');
+  await expect(control).toBeHidden();
+});
+
+test('clipboard rejection leaves the verified result and controls usable', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: async () => { throw new DOMException('Clipboard not permitted', 'NotAllowedError'); },
+    } });
+  });
+  await mockCalculator(page);
+  await page.goto(baseURL);
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await page.getByRole('button', { name: 'Copy estimate' }).click();
+  await expect(page.locator('#calculation-status')).toContainText('Could not copy');
+  await expect(page.locator('#monthly-payment')).toHaveText('$500.95');
+  await expect(page.getByRole('button', { name: 'Download CSV' })).toBeEnabled();
+  await expect(page.locator('#simulation-error')).toBeHidden();
+});
+
+test('late clipboard completion cannot replace the status of edited inputs', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: () => new Promise(resolve => { window.finishCopy = resolve; }),
+    } });
+  });
+  await mockCalculator(page);
+  await page.goto(baseURL);
+  const copy = page.getByRole('button', { name: 'Copy estimate' });
+  await copy.click();
+  await page.getByLabel('Loan amount', { exact: true }).fill('1234');
+  await expect(copy).toBeHidden();
+  await page.evaluate(() => window.finishCopy());
+  await expect(page.locator('#calculation-status')).toContainText('Your values have changed');
+});
